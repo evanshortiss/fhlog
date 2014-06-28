@@ -1,0 +1,22 @@
+{
+  "name": "logger",
+  "version": "0.0.0",
+  "description": "Simple and flexible logger for the browser.",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Evan Shortiss",
+  "license": "MIT",
+  "devDependencies": {
+    "grunt": "~0.4.5",
+    "browserify": "~4.1.8",
+    "grunt-browserify": "~2.1.0",
+    "grunt-lintspaces": "^0.5.1",
+    "grunt-contrib-jshint": "^0.10.0",
+    "grunt-column-lint": "~0.2.0"
+  },
+  "dependencies": {
+    "safejson": "~1.0.0",
+    "cron": "~1.0.4"
+  }
+}
