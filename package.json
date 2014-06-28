@@ -13,7 +13,16 @@
     "grunt-browserify": "~2.1.0",
     "grunt-lintspaces": "^0.5.1",
     "grunt-contrib-jshint": "^0.10.0",
-    "grunt-column-lint": "~0.2.0"
+    "grunt-column-lint": "~0.2.0",
+    "grunt-mocha-istanbul": "~1.4.2",
+    "karma-chrome-launcher": "~0.1.4",
+    "grunt-karma": "~0.8.3",
+    "chai": "~1.9.1",
+    "karma-chai": "~0.1.0",
+    "mocha": "~1.20.1",
+    "karma-mocha": "~0.1.4",
+    "karma": "~0.12.16",
+    "proxyquire": "~1.0.1"
   },
   "dependencies": {
     "safejson": "~1.0.0",
