@@ -5,25 +5,13 @@ module.exports = function(grunt) {
 
     pkg: grunt.file.readJSON('package.json'),
 
-    mocha_istanbul: {
-      coverage: {
-        src: './test',
-        options: {
-          mask: '*.spec.js'
-        }
-      },
-      coveralls: {
-        src: './test',
-        options: {
-          coverage: true,
-          check: {
-            lines: 75,
-            statements: 75
-          },
-          root: './lib',
-          reporter: 'spec',
-          reportFormats: ['html', 'lcovonly']
-        }
+    mochaTest: {
+      src: [
+        'test/**/*.js',
+        '!test/browser/*.js'
+      ],
+      options: {
+        reporter: 'spec'
       }
     },
 
@@ -37,6 +25,13 @@ module.exports = function(grunt) {
       src: ['Gruntfile.js', './lib/**/*.js'],
       options: {
         jshintrc: './jshintrc.js'
+      }
+    },
+
+    shell: {
+      build: {
+        command: './node_modules/.bin/browserify -s Loggr ' +
+          '-e ./lib/LoggerFactory.js -o ./dist/logger.js'
       }
     },
 
@@ -55,12 +50,14 @@ module.exports = function(grunt) {
     }
   });
 
-  grunt.loadNpmTasks('grunt-mocha-istanbul');
+  grunt.loadNpmTasks('grunt-shell');
+  grunt.loadNpmTasks('grunt-mocha-test');
   grunt.loadNpmTasks('grunt-lintspaces');
   grunt.loadNpmTasks('grunt-column-lint');
   grunt.loadNpmTasks('grunt-contrib-jshint');
 
   grunt.registerTask('format', ['lintspaces', 'jshint', 'column_lint']);
-  grunt.registerTask('test', ['mocha_istanbul:coveralls', 'mocha_istanbul:coverage']);
+  grunt.registerTask('test', ['format', 'mochaTest']);
+  grunt.registerTask('build', ['format', 'test', 'shell:build']);
   grunt.registerTask('default', ['format']);
 };

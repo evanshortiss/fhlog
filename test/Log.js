@@ -1,9 +1,12 @@
+'use strict';
+
 var assert = require('assert')
   , LEVELS = require('../lib/Levels')
   , Log = require('../lib/Log');
 
 var TEST_NAME = 'abc123'
-  , TEST_ARGS = ['I want %s', 'cake'];
+  , TEST_ARGS = ['Is maith liom %s', 'cáca milis']
+  , LOG_RES = 'Is maith liom cáca milis';
 
 describe('Log', function () {
 
@@ -16,7 +19,7 @@ describe('Log', function () {
   it('#print Should return a formatted log string', function () {
     var l = new Log(LEVELS.INFO, TEST_NAME, TEST_ARGS);
 
-    assert.notEqual(l.print().indexOf('I want cake'), -1);
+    assert.notEqual(l.print().indexOf(LOG_RES), -1);
   });
 
   it('#toJSON Should return a JSON Object with expected fields', function () {
@@ -25,7 +28,7 @@ describe('Log', function () {
 
     assert.equal(typeof res, 'object');
     assert.equal(typeof res.ts, 'number');
-    assert.notEqual(res.text.indexOf('I want cake'), -1);
+    assert.notEqual(res.text.indexOf(LOG_RES), -1);
     assert.equal(res.level, LEVELS.INFO);
   });
 

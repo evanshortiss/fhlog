@@ -1,3 +1,5 @@
+'use strict';
+
 var assert = require('assert')
   , proxyquire = require('proxyquire')
   , LEVELS = require('../lib/Levels')
@@ -8,8 +10,8 @@ var assert = require('assert')
   });
 
 var TEST_NAME = 'abc123'
-  , TEST_ARGS = ['I want %s', 'cake']
-  , LOG_RES = 'I want cake';
+  , TEST_ARGS = ['Is maith liom %s', 'cáca milis']
+  , LOG_RES = 'Is maith liom cáca milis';
 
 var l = new Logger(TEST_NAME, LEVELS.INFO);
 
@@ -23,9 +25,11 @@ describe('Logger', function () {
     assert.notEqual(l.info.apply(l, TEST_ARGS).indexOf(LOG_RES), -1);
     assert.notEqual(l.warn.apply(l, TEST_ARGS).indexOf(LOG_RES), -1);
     assert.notEqual(l.error.apply(l, TEST_ARGS).indexOf(LOG_RES), -1);
+    assert.notEqual(l.err.apply(l, TEST_ARGS).indexOf(LOG_RES), -1);
+    assert.notEqual(l.log.apply(l, TEST_ARGS).indexOf(LOG_RES), -1);
   });
 
-  it('#setName Should return a JSON Object with expected fields', function () {
+  it('#setName Should change the logger name', function () {
     var originalName = l.getName()
       , newName = Math.random().toString();
 
@@ -36,14 +40,6 @@ describe('Logger', function () {
   it('#getName Should return the passed logger name', function () {
     var lgr = new Logger(TEST_NAME, LEVELS.INFO);
     assert.equal(TEST_NAME, lgr.getName());
-  });
-
-  it('#setName Should return a JSON Object with expected fields', function () {
-    var originalName = l.getName()
-      , newName = Math.random().toString();
-
-    l.setName(newName);
-    assert.notEqual(l.getName(), originalName);
   });
 
   it('#getLogLevel Should return the passed log level to constructor', function () {
