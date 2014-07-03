@@ -28,6 +28,7 @@ describe('Log', function () {
 
     assert.equal(typeof res, 'object');
     assert.equal(typeof res.ts, 'number');
+    assert.equal(res.name, TEST_NAME);
     assert.notEqual(res.text.indexOf(LOG_RES), -1);
     assert.equal(res.level, LEVELS.INFO);
   });
