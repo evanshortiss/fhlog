@@ -58,6 +58,6 @@ module.exports = function(grunt) {
 
   grunt.registerTask('format', ['lintspaces', 'jshint', 'column_lint']);
   grunt.registerTask('test', ['format', 'mochaTest']);
-  grunt.registerTask('build', ['format', 'test', 'shell:build']);
+  grunt.registerTask('build', ['test', 'shell:build']);
   grunt.registerTask('default', ['format']);
 };
