@@ -1,7 +1,7 @@
 {
-  "name": "Logger",
+  "name": "jslog",
   "version": "0.0.0",
-  "description": "Simple and flexible logger for the browser.",
+  "description": "Simple and flexible logger for the browser and Node.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -21,7 +21,7 @@
   },
   "testling": {
     "harness": "mocha-bdd",
-    "files": "./test/browser/**/*.js",
+    "files": "./test/**/*.js",
     "browsers": [
       "ie/8..latest",
       "chrome/22..latest",
