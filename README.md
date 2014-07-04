@@ -2,7 +2,9 @@ Logger
 ======
 
 JavaScript log library with namespaced and timestamped logs. Can be used in 
-Node.js and the Browser.
+Node.js and the Browser. 
+
+This project is still in early stages of development.
 
 
 ## Sample Code
