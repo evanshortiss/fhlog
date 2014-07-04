@@ -30,8 +30,8 @@ module.exports = function(grunt) {
 
     shell: {
       build: {
-        command: './node_modules/.bin/browserify -s jslog ' +
-          '-e ./lib/LoggerFactory.js -o ./dist/jslog.js'
+        command: './node_modules/.bin/browserify -s hlog ' +
+          '-e ./lib/LoggerFactory.js -o ./dist/hlog.js'
       }
     },
 

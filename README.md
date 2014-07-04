@@ -1,4 +1,4 @@
-Logger
+hlog
 ======
 
 JavaScript log library with namespaced and timestamped logs. Can be used in 

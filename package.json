@@ -1,5 +1,5 @@
 {
-  "name": "jslog",
+  "name": "hlog",
   "version": "0.0.0",
   "description": "Simple and flexible logger for the browser and Node.js",
   "scripts": {
