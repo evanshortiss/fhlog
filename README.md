@@ -1,4 +1,4 @@
-hlog
+fhlog
 ======
 
 JavaScript log library with namespaced and timestamped logs. Can be used in 
@@ -9,7 +9,7 @@ This project is still in early stages of development.
 
 ## Sample Code
 ```javascript
-var Logger = require('logger'); // May also use window.Logger
+var Logger = require('fhlog'); // May also use window.fhlog
 
 // Create a logger for "Stats" component
 var stats = Logger.getLogger('Stats', Logger.LEVELS.DEBUG);
