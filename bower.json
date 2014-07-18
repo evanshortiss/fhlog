@@ -1,0 +1,21 @@
+{
+  "name": "fhlog",
+  "main": "./dist/fhlog.js",
+  "version": "0.0.1",
+  "description": "Client-side logger with support for storage and server upload.",
+  "homepage": "https://github.com/evanshortiss/fhlog",
+  "keywords": ["fhlog", "log", "logger", "fh"],
+  "authors": [
+    "Evan Shortiss"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "lib",
+    "Makefile"
+    "package.json"
+  ]
+}
