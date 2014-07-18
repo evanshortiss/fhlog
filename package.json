@@ -9,15 +9,11 @@
   "author": "Evan Shortiss",
   "license": "MIT",
   "devDependencies": {
-    "grunt": "~0.4.5",
     "browserify": "~4.1.8",
-    "grunt-lintspaces": "^0.5.1",
-    "grunt-contrib-jshint": "^0.10.0",
-    "grunt-column-lint": "~0.2.0",
     "mocha": "~1.20.1",
     "proxyquire": "~1.0.1",
-    "grunt-shell": "~0.7.0",
-    "grunt-mocha-test": "~0.11.0"
+    "lintspaces-cli": "0.0.3",
+    "jshint": "~2.5.2"
   },
   "repository": {
     "type": "git",
