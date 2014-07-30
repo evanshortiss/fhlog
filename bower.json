@@ -1,7 +1,7 @@
 {
   "name": "fhlog",
   "main": "./dist/fhlog.js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Client-side logger with support for storage and server upload.",
   "homepage": "https://github.com/evanshortiss/fhlog",
   "keywords": ["fhlog", "log", "logger", "fh"],
