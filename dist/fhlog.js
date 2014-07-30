@@ -215,6 +215,8 @@ module.exports = new LoggerFactory();
  * @param {Boolean}   [upload]
  */
 LoggerFactory.prototype.getLogger = function (name, level, upload) {
+  name = name || '';
+
   if (upload) {
     Uploader.startInterval();
   }
