@@ -14,7 +14,11 @@ module.exports = {
 var util = _dereq_('util')
   , LEVELS = _dereq_('./Levels');
 
-
+/**
+ * @public
+ * @constructor
+ *
+ */
 function Log(level, name, args) {
   args = Array.prototype.slice.call(args);
 
@@ -55,10 +59,12 @@ module.exports = Log;
 
 
 /**
- * Write the contents of this log to stdout/output
- * @return {String}
+ * @public
+ * Write the contents of this log to stdout.
+ * @param   {Boolean} print Determines if the log is written to stdout
+ * @return  {String}
  */
-Log.prototype.print = function () {
+Log.prototype.print = function (print) {
   var str = this.text
     , logFn = console.log;
 
@@ -79,7 +85,9 @@ Log.prototype.print = function () {
       break;
   }
 
-  logFn.call(console, str);
+  if (print) {
+    logFn.call(console, str);
+  }
 
   return str;
 };
@@ -116,13 +124,19 @@ var Log = _dereq_('./Log')
 
 
 /**
+ * @constructor
  * Wrapper for the console object.
  * Should behave the same as console.METHOD
+ * @param {String}    [name]    Name of this logger to include in logs.
+ * @param {Number}    [level]   Level to use for calls to .log
+ * @param {Boolean}   [upload]  Determines if logs are uploaded.
+ * @param {Boolean}   [silent]  Flag indicating if we print to stdout or not.
  */
-function Logger (name, level, upload) {
+function Logger (name, level, upload, silent) {
   this._logLevel = level || this.LEVELS.DEBUG;
   this._name = name || '';
   this._upload = upload || false;
+  this._silent = silent || false;
 }
 module.exports = Logger;
 
@@ -131,8 +145,8 @@ Logger.LEVELS = LEVELS;
 
 
 /**
- * Log output to the console with format:
- * "2014-06-26T16:42:11.139Z LoggerName:"
+ * @private
+ * Log output to stdout with format: "2014-06-26T16:42:11.139Z LoggerName:"
  * @param   {Number}  level
  * @param   {Array}   args
  * @return  {String}
@@ -144,49 +158,141 @@ Logger.prototype._log = function(level, args) {
     Storage.writeLog(l);
   }
 
-  return l.print();
+  return l.print(!this.isSilent());
 };
 
-// Log a message a current log level
+
+/**
+ * @public
+ * Toggle printing out logs to stdout.
+ * @param {Boolean} silent
+ */
+Logger.prototype.setSilent = function (silent) {
+  this.silent = silent || false;
+};
+
+
+/**
+ * @public
+ * Determine if this logger is printing to stdout.
+ * @returns {Boolean}
+ */
+Logger.prototype.isSilent = function () {
+  return this._silent;
+};
+
+
+/**
+ * @public
+ * Log a message a current log level
+ * Log a string and return the string value of the provided log args.
+ * This operates in the same manner as console.
+ * @param [arguments] arguments The list of args to log.
+ * @returns {String}
+ */
 Logger.prototype.log = function () {
   return this._log(this.getLogLevel(), arguments);
 };
 
-// Log a message at 'DEBUG' level
+
+/**
+ * @public
+ * Log a message at 'DEBUG' level
+ * Log a string and return the string value of the provided log args.
+ * This operates in the same manner as console.debug
+ * @param [arguments] arguments The list of args to log.
+ * @returns {String}
+ */
 Logger.prototype.debug = function () {
   return this._log(LEVELS.DEBUG, arguments);
 };
 
-// Log a message at 'INFO' level
+
+/**
+ * @public
+ * Log a message at 'INFO' level
+ * Log a string and return the string value of the provided log args.
+ * This operates in the same manner as console.info
+ * @param [arguments] arguments The list of args to log.
+ * @returns {String}
+ */
 Logger.prototype.info = function () {
   return this._log(LEVELS.INFO, arguments);
 };
 
-// Log a message at 'WARN' level
+
+/**
+ * @public
+ * Log a message at 'WARN' level
+ * Log a string and return the string value of the provided log args.
+ * This operates in the same manner as console.warn
+ * @param [arguments] arguments The list of args to log.
+ * @returns {String}
+ */
 Logger.prototype.warn = function () {
   return this._log(LEVELS.WARN, arguments);
 };
 
-// Log a message at 'ERROR' level
+
+/**
+ * @public
+ * Log a message at 'ERROR' level
+ * Log a string and return the string value of the provided log args.
+ * This operates in the same manner as console.error
+ * @param [arguments] arguments The list of args to log.
+ * @returns {String}
+ */
 Logger.prototype.err = function () {
   return this._log(LEVELS.ERROR, arguments);
 };
-// Log a message at 'ERROR' level
+
+
+/**
+ * @public
+ * Log a message at 'ERROR' level
+ * Log a string and return the string value of the provided log args.
+ * This operates in the same manner as console.error
+ * @param [arguments] arguments The list of args to log.
+ * @returns {String}
+ */
 Logger.prototype.error = Logger.prototype.err;
 
 
-Logger.prototype.setLogLevel = function (newLevel) {
-  this._logLevel = newLevel;
+/**
+ * @public
+ * Set the level of this logger for calls to the .log instance method.
+ * @param {Number} lvl
+ */
+Logger.prototype.setLogLevel = function (lvl) {
+  this._logLevel = lvl;
 };
 
+
+/**
+ * @public
+ * Get the level of this logger used by calls to the .log instance method.
+ * @returns {Number}
+ */
 Logger.prototype.getLogLevel = function () {
   return this._logLevel;
 };
 
+
+/**
+ * @public
+ * Get the name of this logger.
+ * @returns {String}
+ */
 Logger.prototype.getName = function () {
   return this._name;
 };
 
+
+/**
+ * @public
+ * Set the name of this logger. It would be very unusual to use this.
+ * @param {String} name
+ */
 Logger.prototype.setName = function(name) {
   this._name = name;
 };
@@ -194,14 +300,19 @@ Logger.prototype.setName = function(name) {
 },{"./Levels":1,"./Log":2,"./Storage":5}],4:[function(_dereq_,module,exports){
 'use strict';
 
-var LEVELS = _dereq_('./Levels')
-  , Logger = _dereq_('./Logger')
-  , Uploader = _dereq_('./Uploader');
+var Logger = _dereq_('./Logger')
+  , Uploader = _dereq_('./Uploader')
+  , LEVELS = _dereq_('./Levels');
 
 
 // Map of loggers created. Same name loggers exist only once.
 var loggers = {};
 
+/**
+ * @constructor
+ * @private
+ * Used to create instances
+ */
 function LoggerFactory () {
   this.LEVELS = LEVELS;
 }
@@ -209,12 +320,15 @@ function LoggerFactory () {
 module.exports = new LoggerFactory();
 
 /**
- * Get a named logger instance.
- * @param {String}    [name]
- * @param {Number}    [level]
- * @param {Boolean}   [upload]
+ * @public
+ * Get a named logger instance creating it if it doesn't already exist.
+ * @param   {String}    [name]
+ * @param   {Number}    [level]
+ * @param   {Boolean}   [upload]
+ * @param   {Boolean}   [silent]
+ * @returns {Logger}
  */
-LoggerFactory.prototype.getLogger = function (name, level, upload) {
+LoggerFactory.prototype.getLogger = function (name, level, upload, silent) {
   name = name || '';
 
   if (upload) {
@@ -224,7 +338,7 @@ LoggerFactory.prototype.getLogger = function (name, level, upload) {
   if (loggers[name]) {
     return loggers[name];
   } else {
-    loggers[name] = new Logger(name, level, upload);
+    loggers[name] = new Logger(name, level, upload, silent);
 
     return loggers[name];
   }
@@ -232,14 +346,16 @@ LoggerFactory.prototype.getLogger = function (name, level, upload) {
 
 
 /**
- * Set the function that will be used for log uplaod
- * @param {Function}
+ * @public
+ * Set the function that will be used to upload logs.
+ * @param {Function} uploadFn
  */
 LoggerFactory.prototype.setUploadFn = Uploader.setUploadFn;
 
 
 /**
- * Invoke an upload of logs.
+ * @public
+ * Force logs to upload at this time.
  * @param {Function} [callback]
  */
 LoggerFactory.prototype.upload = Uploader.upload;
