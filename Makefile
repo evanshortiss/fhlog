@@ -10,14 +10,13 @@ srcFiles = $(shell find ./lib -type f -name '*.js' | xargs)
 default: format
 
 # Run tests, then build the hype JavaScript bundle
-build:
+build:format
 	@make format
 	$(browserify) -s fhlog -e ./lib/LoggerFactory.js -o ./dist/fhlog.js
 	@echo "Build succeeded!\n"
 
 # Test files for formatting and errors, then run tests
-test:
-	@make build
+test:build
 	$(mocha) -R spec ./test/*.js
 
 # Test file formatting and for errors
