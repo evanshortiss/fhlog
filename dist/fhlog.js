@@ -12,6 +12,7 @@ module.exports = {
 'use strict';
 
 var util = _dereq_('util')
+  , transport = _dereq_('./transport')
   , LEVELS = _dereq_('./Levels');
 
 
@@ -55,33 +56,13 @@ module.exports = Log;
 
 
 /**
- * Write the contents of this log to stdout/output
+ * Write the contents of this log to output transport
  * @return {String}
  */
 Log.prototype.print = function () {
-  var str = this.text
-    , logFn = console.log;
+  transport.log(this.level, this.text);
 
-  switch (this.level) {
-    case LEVELS.DEBUG:
-      // console.debug is not available in Node land
-      logFn = console.debug || console.log;
-      break;
-    case LEVELS.INFO:
-      // console.info is not available in Node land either
-      logFn = console.info || console.log;
-      break;
-    case LEVELS.WARN:
-      logFn = console.warn;
-      break;
-    case LEVELS.ERROR:
-      logFn = console.error;
-      break;
-  }
-
-  logFn.call(console, str);
-
-  return str;
+  return this.text;
 };
 
 
@@ -107,7 +88,7 @@ Log.prototype.toJSON = function () {
   };
 };
 
-},{"./Levels":1,"util":10}],3:[function(_dereq_,module,exports){
+},{"./Levels":1,"./transport":8,"util":12}],3:[function(_dereq_,module,exports){
 'use strict';
 
 var Log = _dereq_('./Log')
@@ -374,7 +355,7 @@ exports.writeLog = function (log, callback) {
   });
 };
 
-},{"safejson":11}],6:[function(_dereq_,module,exports){
+},{"safejson":13}],6:[function(_dereq_,module,exports){
 'use strict';
 
 var Storage = _dereq_('./Storage')
@@ -472,7 +453,88 @@ exports.upload = function (callback) {
   });
 };
 
-},{"./Storage":5,"safejson":11}],7:[function(_dereq_,module,exports){
+},{"./Storage":5,"safejson":13}],7:[function(_dereq_,module,exports){
+(function (process){
+'use strict';
+
+var LEVELS = _dereq_('../Levels');
+
+/**
+ * Logs output using Node.js stdin/stderr stream.
+ * @private
+ * @param {Number} level
+ * @param {String} str
+ */
+function nodeLog (level, str) {
+  if (level === LEVELS.ERROR) {
+    process.stderr.write(str + '\n');
+  } else {
+    process.stdout.write(str + '\n');
+  }
+}
+
+
+/**
+ * Logs output using the browser's console object.
+ * @private
+ * @param {Number} level
+ * @param {String} str
+ */
+function browserLog (level, str) {
+  var logFn = console.log;
+
+  switch (level) {
+    case LEVELS.DEBUG:
+      // console.debug is not available in Node land
+      logFn = console.debug || console.log;
+      break;
+    case LEVELS.INFO:
+      // console.info is not available in Node land either
+      logFn = console.info || console.log;
+      break;
+    case LEVELS.WARN:
+      logFn = console.warn;
+      break;
+    case LEVELS.ERROR:
+      logFn = console.error;
+      break;
+  }
+
+  logFn.call(console, str);
+}
+
+
+if (typeof window === 'undefined') {
+  module.exports = nodeLog;
+} else {
+  module.exports = browserLog;
+}
+
+}).call(this,_dereq_("FWaASH"))
+},{"../Levels":1,"FWaASH":10}],8:[function(_dereq_,module,exports){
+'use strict';
+
+
+exports.transports = {
+  'console': _dereq_('./console')
+};
+
+// Transports to use, default inclues console
+var activeTransports = [exports.transports.console];
+
+/**
+ * Log the provided log to the active transports.
+ * @public
+ * @param {Number} level
+ * @param {String} str
+ */
+exports.log = function (level, str) {
+  for (var i in activeTransports) {
+    activeTransports[i](level, str);
+  }
+};
+
+},{"./console":7}],9:[function(_dereq_,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -497,7 +559,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],8:[function(_dereq_,module,exports){
+},{}],10:[function(_dereq_,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -562,14 +624,14 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],9:[function(_dereq_,module,exports){
+},{}],11:[function(_dereq_,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],10:[function(_dereq_,module,exports){
+},{}],12:[function(_dereq_,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -1159,7 +1221,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,_dereq_("FWaASH"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":9,"FWaASH":8,"inherits":7}],11:[function(_dereq_,module,exports){
+},{"./support/isBuffer":11,"FWaASH":10,"inherits":9}],13:[function(_dereq_,module,exports){
 (function (process){
 // Determines wether actions should be deferred for processing
 exports.defer = false;
@@ -1218,6 +1280,6 @@ exports.parse = function (/*json, reviver, callback*/) {
   });
 };
 }).call(this,_dereq_("FWaASH"))
-},{"FWaASH":8}]},{},[4])
+},{"FWaASH":10}]},{},[4])
 (4)
 });
