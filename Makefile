@@ -1,5 +1,6 @@
 mocha 		= ./node_modules/.bin/mocha
 jshint		= ./node_modules/.bin/jshint
+linelint 	= ./node_modules/.bin/linelint
 browserify 	= ./node_modules/.bin/browserify
 lintspaces 	= ./node_modules/.bin/lintspaces
 
@@ -11,7 +12,6 @@ default: format
 
 # Run tests, then build the hype JavaScript bundle
 build:format
-	@make format
 	$(browserify) -s fhlog -e ./lib/LoggerFactory.js -o ./dist/fhlog.js
 	@echo "Build succeeded!\n"
 
@@ -21,6 +21,8 @@ test:build
 
 # Test file formatting and for errors
 format:
+	$(linelint) $(srcFiles) $(testFiles)
+	@echo "linelint pass!\n"
 	$(lintspaces) -nt -i js-comments -d spaces -s 2 $(srcFiles)
 	@echo "lintspaces pass!\n"
 	$(jshint) $(srcFiles)
