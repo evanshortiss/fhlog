@@ -96,12 +96,15 @@ Log.prototype.toJSON = function () {
 };
 
 },{"./Levels":1,"./transport":8,"util":12}],3:[function(_dereq_,module,exports){
+(function (process){
 'use strict';
 
 var Log = _dereq_('./Log')
-  , Storage = _dereq_('./Storage')
   , LEVELS = _dereq_('./Levels');
 
+if (process && typeof window === 'undefined') {
+  var Storage = _dereq_('./Storage');
+}
 
 /**
  * @constructor
@@ -134,7 +137,7 @@ Logger.LEVELS = LEVELS;
 Logger.prototype._log = function(level, args) {
   var l = new Log(level, this.getName(), args);
 
-  if (this._upload) {
+  if (Storage && this._upload) {
     Storage.writeLog(l);
   }
 
@@ -148,7 +151,7 @@ Logger.prototype._log = function(level, args) {
  * @param {Boolean} silent
  */
 Logger.prototype.setSilent = function (silent) {
-  this.silent = silent || false;
+  this._silent = silent || false;
 };
 
 
@@ -277,7 +280,8 @@ Logger.prototype.setName = function(name) {
   this._name = name;
 };
 
-},{"./Levels":1,"./Log":2,"./Storage":5}],4:[function(_dereq_,module,exports){
+}).call(this,_dereq_("FWaASH"))
+},{"./Levels":1,"./Log":2,"./Storage":5,"FWaASH":10}],4:[function(_dereq_,module,exports){
 'use strict';
 
 var Logger = _dereq_('./Logger')
@@ -569,25 +573,9 @@ exports.upload = function (callback) {
 };
 
 },{"./Storage":5,"safejson":13}],7:[function(_dereq_,module,exports){
-(function (process){
 'use strict';
 
 var LEVELS = _dereq_('../Levels');
-
-/**
- * Logs output using Node.js stdin/stderr stream.
- * @private
- * @param {Number} level
- * @param {String} str
- */
-function nodeLog (level, str) {
-  if (level === LEVELS.ERROR) {
-    process.stderr.write(str + '\n');
-  } else {
-    process.stdout.write(str + '\n');
-  }
-}
-
 
 /**
  * Logs output using the browser's console object.
@@ -595,16 +583,14 @@ function nodeLog (level, str) {
  * @param {Number} level
  * @param {String} str
  */
-function browserLog (level, str) {
-  var logFn = console.log;
+module.exports = function (level, str) {
+  var logFn = null;
 
   switch (level) {
     case LEVELS.DEBUG:
-      // console.debug is not available in Node land
       logFn = console.debug || console.log;
       break;
     case LEVELS.INFO:
-      // console.info is not available in Node land either
       logFn = console.info || console.log;
       break;
     case LEVELS.WARN:
@@ -613,20 +599,15 @@ function browserLog (level, str) {
     case LEVELS.ERROR:
       logFn = console.error;
       break;
+    default:
+      logFn = console.log;
+      break;
   }
 
   logFn.call(console, str);
-}
+};
 
-
-if (typeof window === 'undefined') {
-  module.exports = nodeLog;
-} else {
-  module.exports = browserLog;
-}
-
-}).call(this,_dereq_("FWaASH"))
-},{"../Levels":1,"FWaASH":10}],8:[function(_dereq_,module,exports){
+},{"../Levels":1}],8:[function(_dereq_,module,exports){
 'use strict';
 
 
