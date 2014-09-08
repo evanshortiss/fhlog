@@ -1,4 +1,5 @@
 mocha 		= ./node_modules/.bin/mocha
+karma 		= ./node_modules/karma/bin/karma
 jshint		= ./node_modules/.bin/jshint
 linelint 	= ./node_modules/.bin/linelint
 browserify 	= ./node_modules/.bin/browserify
@@ -18,6 +19,8 @@ build:format
 # Test files for formatting and errors, then run tests
 test:build
 	$(mocha) -R spec ./test/*.js
+	$(browserify) -e ./test/index.js -o ./test/browser/bundle.js
+	$(karma) start
 
 # Test file formatting and for errors
 format:
