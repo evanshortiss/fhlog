@@ -1,13 +1,8 @@
 'use strict';
 
 var assert = require('assert')
-  , proxyquire = require('proxyquire')
   , LEVELS = require('../lib/Levels')
-  , Logger = proxyquire('../lib/Logger', {
-    './Storage': {
-      writeLog: function() {}
-    }
-  });
+  , Logger = require('../lib/Logger');
 
 var TEST_NAME = 'abc123'
   , TEST_ARGS = ['Is maith liom %s', 'cáca milis']
