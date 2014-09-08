@@ -102,7 +102,7 @@ Log.prototype.toJSON = function () {
 var Log = _dereq_('./Log')
   , LEVELS = _dereq_('./Levels');
 
-if (process && typeof window === 'undefined') {
+if (typeof process === 'undefined' && typeof window !== 'undefined') {
   var Storage = _dereq_('./Storage');
 }
 
