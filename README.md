@@ -70,7 +70,9 @@ but if an error occurs it will need to be notified via that first parameter
 otherwise your logs will be deleted without having reached your server!
 
 ```javascript
-Logger.getLogger('Stats', Logger.LEVELS.DEBUG, true);
+Logger.getLogger('Stats', {
+	level: Logger.LEVELS.DEBUG
+}, true);
 
 // Logs is a JSON String containing an Array of Objects
 Logger.setUploadFn(function (logs, callback) {
