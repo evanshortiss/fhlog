@@ -21,7 +21,6 @@ describe('Logger', function () {
     assert.notEqual(l.warn.apply(l, TEST_ARGS).indexOf(LOG_RES), -1);
     assert.notEqual(l.error.apply(l, TEST_ARGS).indexOf(LOG_RES), -1);
     assert.notEqual(l.err.apply(l, TEST_ARGS).indexOf(LOG_RES), -1);
-    assert.notEqual(l.log.apply(l, TEST_ARGS).indexOf(LOG_RES), -1);
   });
 
   it('#setName Should change the logger name', function () {

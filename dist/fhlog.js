@@ -115,11 +115,13 @@ if (typeof process === 'undefined' && typeof window !== 'undefined') {
  * @param {Boolean}   [upload]  Determines if logs are uploaded.
  * @param {Boolean}   [silent]  Flag indicating if we print to stdout or not.
  */
-function Logger (name, level, upload, silent) {
-  this._logLevel = level || this.LEVELS.DEBUG;
+function Logger (name, opts) {
+  opts = opts || {};
+
   this._name = name || '';
-  this._upload = upload || false;
-  this._silent = silent || false;
+  this._logLevel = opts.level || this.LEVELS.DEBUG;
+  this._upload = opts.upload || false;
+  this._silent = opts.silent || false;
 }
 module.exports = Logger;
 
@@ -135,6 +137,11 @@ Logger.LEVELS = LEVELS;
  * @return  {String}
  */
 Logger.prototype._log = function(level, args) {
+  if (level < this.getLogLevel()) {
+    // Don't log anything if the log level is set above the provided level
+    return;
+  }
+
   var l = new Log(level, this.getName(), args);
 
   if (Storage && this._upload) {
@@ -162,19 +169,6 @@ Logger.prototype.setSilent = function (silent) {
  */
 Logger.prototype.isSilent = function () {
   return this._silent;
-};
-
-
-/**
- * @public
- * Log a message a current log level
- * Log a string and return the string value of the provided log args.
- * This operates in the same manner as console.
- * @param [arguments] arguments The list of args to log.
- * @returns {String}
- */
-Logger.prototype.log = function () {
-  return this._log(this.getLogLevel(), arguments);
 };
 
 
@@ -303,6 +297,12 @@ function LoggerFactory () {
 
 module.exports = new LoggerFactory();
 
+LoggerFactory.prototype.setGlobalLevel = function (level) {
+  for (var i in loggers) {
+    loggers[i].setLogLevel(level);
+  }
+};
+
 /**
  * @public
  * Get a named logger instance creating it if it doesn't already exist.
@@ -312,17 +312,17 @@ module.exports = new LoggerFactory();
  * @param   {Boolean}   [silent]
  * @returns {Logger}
  */
-LoggerFactory.prototype.getLogger = function (name, level, upload, silent) {
+LoggerFactory.prototype.getLogger = function (name, opts) {
   name = name || '';
 
-  if (upload) {
+  if (opts && opts.upload) {
     Uploader.startInterval();
   }
 
   if (loggers[name]) {
     return loggers[name];
   } else {
-    loggers[name] = new Logger(name, level, upload, silent);
+    loggers[name] = new Logger(name, opts);
 
     return loggers[name];
   }
