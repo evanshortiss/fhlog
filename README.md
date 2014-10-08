@@ -1,32 +1,62 @@
 fhlog
 ======
 
-JavaScript log library with namespaced and timestamped logs. Can be used in 
-Node.js and the Browser. 
+Another loggging library!? Yes. But this one is different. It's written with 
+both the client and server in mind. It has the same API when runnning on the 
+client or server, supports being _require_d in Node/Browserified apps, and also
+can be installed using Bower; great news if you want to use the same log 
+library on both the client and server!
 
-This project is still in early stages of development.
+
 
 
 ## Sample Code
 ```javascript
+'use strict'
+
 var Logger = require('fhlog'); // May also use window.fhlog
 
-// Create a logger for "Stats" component
-var stats = Logger.getLogger('Stats', Logger.LEVELS.DEBUG);
+// Create a logger for "Stats" component and set the level to DEBUG
+var stats = Logger.getLogger('Stats', {
+    level: Logger.LEVELS.DEBUG,
+    // upload: true/false - Should these be uploaded?
+    // silent: true/false - Silence all output from this logger?
+});
 
 // Log levels
-stats.log('I\'ll log at DEBUG level!');
-stats.debug('I\'ll log at DEBUG level too!');
+stats.debug('I\'ll log at DEBUG level!');
 stats.info('I\'ll log at INFO level!');
-stats.warn('I\'ll log at WANR level!');
+stats.warn('I\'ll log at WARN level!');
+stats.error('I\'ll log at ERROR level!');
+
+// Setting a logger level
+stats.setLogLevel(Logger.LEVELS.WARN);
+
+stats.debug('I won\'t be written to console/stdout. My level is too low.');
+stats.info('I won\'t be written to console/stdout either!');
+stats.warn('I\'ll log at WARN level!');
 stats.error('I\'ll log at ERROR level!');
 
 // Getters / Setters
 stats.getName() // returns 'Stats'
 stats.setName('New Name!') // You probably won't need to use this really
 
-stats.setLevel(Logger.LEVELS.WARN);
-stats.getLevel(); // Returns level as a Number
+stats.setLogLevel(Logger.LEVELS.DEBUG);
+var curLvl = stats.getLogLevel();
+stats.info('My log level is %d', curLvl);
+```
+
+## Sample Output
+If we run the above example the following output is generated.
+
+```
+2014-10-01T17:27:57.188Z DEBUG Stats: I'll log at DEBUG level!
+2014-10-01T17:27:57.197Z INFO Stats: I'll log at INFO level!
+2014-10-01T17:27:57.197Z WARN Stats: I'll log at WARN level!
+2014-10-01T17:27:57.197Z ERROR Stats: I'll log at ERROR level!
+2014-10-01T17:27:57.198Z WARN Stats: I'll log at WARN level!
+2014-10-01T17:27:57.198Z ERROR Stats: I'll log at ERROR level!
+2014-10-01T17:27:57.198Z INFO New Name!: My log level is 0
 ```
 
 ## Uploading Logs to a Server
@@ -40,7 +70,9 @@ but if an error occurs it will need to be notified via that first parameter
 otherwise your logs will be deleted without having reached your server!
 
 ```javascript
-Logger.getLogger('Stats', Logger.LEVELS.DEBUG, true);
+Logger.getLogger('Stats', {
+	level: Logger.LEVELS.DEBUG
+}, true);
 
 // Logs is a JSON String containing an Array of Objects
 Logger.setUploadFn(function (logs, callback) {
