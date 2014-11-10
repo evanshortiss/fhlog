@@ -103,7 +103,7 @@ upload is as performant as possible as localStorage is blocking for I/O.
 This is the primary interface exposed when you _require_ this module, or on the 
 _window.fhlog_ object if you're not using Browserify or Node.js.
 
-#### LEVELS
+##### LEVELS
 Exposes a way to set log levels. Contains the following keys for use as shown 
 in previous examples.
 
@@ -112,10 +112,10 @@ in previous examples.
 * WARN
 * ERROR
 
-#### setGlobalLevel(level)
+##### setGlobalLevel(level)
 Set all loggers to the provided level.
 
-#### getLogger(name, opts)
+##### getLogger(name, opts)
 Get a logger prefixed with the given _name_. Valid options for the _opts_ are:
 
 * level - Defaults to _LEVELS.DEBUG_.
@@ -123,10 +123,10 @@ Get a logger prefixed with the given _name_. Valid options for the _opts_ are:
 * silent - Defaults to _false_.
 * colourise - Defaults to _true_. Colours don't work in the browser.
 
-#### setUploadFn(function)
+##### setUploadFn(function)
 Set the function used to upload logs to a server. This is demonstrated above.
 
-#### upload(callback)
+##### upload(callback)
 Force the logs to be uploaded. By default they upload once per minute.
 
 
@@ -134,38 +134,38 @@ Force the logs to be uploaded. By default they upload once per minute.
 Logger instances are returned by _LoggerFactory.getLogger_ 
 (or _window.fhlog.getLogger_).
 
-#### LEVELS
+##### LEVELS
 The levels the Logger can be set to. Same as _LoggerFactory.LEVELS_
 
-#### setSilent(Boolean)
+##### setSilent(Boolean)
 Set this Logger to suppress printing logs to th _console_ or _stdout/sterr_
 
-#### isSilent()
+##### isSilent()
 Detect if this Logger is silent or not. Returns a Boolean
 
-#### debug(str)
+##### debug(str)
 Print a log at DEBUG level. Works just like regular console.log.
 
-#### info(str)
+##### info(str)
 Print a log at INFO level. Works just like regular console.log.
 
-#### warn(str)
+##### warn(str)
 Print a log at WARN level. Works just like regular console.log.
 
-#### error(str)
+##### error(str)
 Print a log at ERROR level. Works just like regular console.log.
 
-#### err(str)
+##### err(str)
 Shorthand for the _error_ method.
 
-#### setLogLevel(LogLevel)
+##### setLogLevel(LogLevel)
 Set the level of this logger.
 
-#### getLogLevel(str)
+##### getLogLevel(str)
 Get the level of this logger.
 
-#### getName(str)
+##### getName(str)
 Get the name of this logger.
 
-#### setName(str)
+##### setName(str)
 Set the name of this logger.
