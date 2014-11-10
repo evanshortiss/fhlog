@@ -1,7 +1,10 @@
 {
   "globals": {
     "angular": true,
-    "$fh": true
+    "$fh": true,
+    "expect": true,
+    "it": true,
+    "describe": true
   },
   "curly": true,
   "camelcase": false,
