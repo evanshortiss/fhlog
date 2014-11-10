@@ -7,7 +7,6 @@ client or server (Node.js), supports being _require_d in Node/Browserified
 apps, and also can be installed using Bower; great news if you want to use the 
 same log library on both the client and server!
 
-
 ## Sample Code
 ```javascript
 
@@ -68,6 +67,9 @@ taking two parameters; the first being an error if one occured, otherwise it's
 null, the second being a result. Currently Logger doesn't look at the result, 
 but if an error occurs it will need to be notified via that first parameter 
 otherwise your logs will be deleted without having reached your server!
+
+This feature is not complete yet so using it is not advised. (Pull Requests 
+welcome!)
 
 ```javascript
 
@@ -169,3 +171,8 @@ Get the name of this logger.
 
 ##### setName(str)
 Set the name of this logger.
+
+
+## Contributing
+Contributions are always welcome! There is no formal style guide, just follow 
+the style already present in the codebase.
