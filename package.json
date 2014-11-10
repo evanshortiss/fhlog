@@ -25,6 +25,7 @@
     "url": "git://github.com/evanshortiss/logger.git"
   },
   "browser": {
+    "colors/safe": "./lib/BrowserColors.js",
     "./lib/transport/console.js": "./lib/transport/console-browser.js"
   },
   "testling": {
@@ -42,6 +43,7 @@
     ]
   },
   "dependencies": {
-    "safejson": "~1.0.0"
+    "safejson": "~1.0.0",
+    "colors": "~1.0.3"
   }
 }

@@ -11,19 +11,28 @@ var TEST_NAME = 'abc123'
 describe('Log', function () {
 
   it('Should create a log object', function () {
-    var l = new Log(LEVELS.INFO, TEST_NAME, TEST_ARGS);
+    var l = new Log({
+      level: LEVELS.INFO,
+      name: TEST_NAME
+    }, TEST_ARGS);
 
     assert.equal(typeof l, 'object');
   });
 
   it('#print Should return a formatted log string', function () {
-    var l = new Log(LEVELS.INFO, TEST_NAME, TEST_ARGS);
+    var l = new Log({
+      level: LEVELS.INFO,
+      name: TEST_NAME
+    }, TEST_ARGS);
 
     assert.notEqual(l.print().indexOf(LOG_RES), -1);
   });
 
   it('#toJSON Should return a JSON Object with expected fields', function () {
-    var l = new Log(LEVELS.INFO, TEST_NAME, TEST_ARGS)
+    var l = new Log({
+      level: LEVELS.INFO,
+      name: TEST_NAME
+    }, TEST_ARGS)
       , res = l.toJSON();
 
     assert.equal(typeof res, 'object');
@@ -34,7 +43,9 @@ describe('Log', function () {
   });
 
   it('#getDate Should return today\'s date', function () {
-    var l = new Log(LEVELS.INFO, TEST_NAME, TEST_ARGS);
+    var l = new Log({
+      level: LEVELS.INFO
+    }, TEST_NAME, TEST_ARGS);
 
     assert.equal(l.getDate(), new Date().toJSON().substr(0, 10));
   });
