@@ -1,6 +1,6 @@
 {
   "name": "fhlog",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Simple and flexible logger for the browser and Node.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -44,6 +44,7 @@
   },
   "dependencies": {
     "safejson": "~1.0.0",
-    "colors": "~1.0.3"
+    "colors": "~1.0.3",
+    "lodash": "~2.4.1"
   }
 }

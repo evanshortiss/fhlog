@@ -100,8 +100,8 @@ upload is as performant as possible as localStorage is blocking for I/O.
 ## API
 
 ### LoggerFactory
-This is the primary interface exposed when you require this module, or on the 
-_window_ object if you're not using Browserify or Node.js.
+This is the primary interface exposed when you _require_ this module, or on the 
+_window.fhlog_ object if you're not using Browserify or Node.js.
 
 #### LEVELS
 Exposes a way to set log levels. Contains the following keys for use as shown 
