@@ -11,7 +11,7 @@ srcFiles = $(shell find ./lib -type f -name '*.js' | xargs)
 
 default: format
 
-# Run tests, then build the hype JavaScript bundle
+# Run tests, then build the bundle
 build:format
 	$(browserify) -s fhlog -e ./lib/LoggerFactory.js -o ./dist/fhlog.js
 	@echo "Build succeeded!\n"

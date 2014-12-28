@@ -3,7 +3,7 @@ fhlog
 
 Another loggging library!? Yes. But this one is different. It's written with 
 both the client and server in mind. It has the same API when runnning on the 
-client or server (Node.js), supports being _require_d in Node/Browserified 
+client or server (Node.js), supports being _required_ in Node/Browserified 
 apps, and also can be installed using Bower; great news if you want to use the 
 same log library on both the client and server!
 
@@ -14,7 +14,7 @@ var Logger = require('fhlog'); // May also use window.fhlog
 
 // Create a logger for "Stats" component and set the level to DEBUG
 var stats = Logger.getLogger('Stats', {
-    level: Logger.LEVELS.DEBUG,
+    level: Logger.LEVELS.DBG,
     // upload: true/false - Should these be uploaded?
     // silent: true/false - Silence all output from this logger?
 });
@@ -37,7 +37,7 @@ stats.error('I\'ll log at ERROR level!');
 stats.getName() // returns 'Stats'
 stats.setName('New Name!') // You probably won't need to use this really
 
-stats.setLogLevel(Logger.LEVELS.DEBUG);
+stats.setLogLevel(Logger.LEVELS.DBG);
 var curLvl = stats.getLogLevel();
 stats.info('My log level is %d', curLvl);
 
@@ -48,49 +48,52 @@ If we run the above example the following output is generated.
 
 ```
 
-2014-10-01T17:27:57.188Z DEBUG Stats: I'll log at DEBUG level!
-2014-10-01T17:27:57.197Z INFO Stats: I'll log at INFO level!
-2014-10-01T17:27:57.197Z WARN Stats: I'll log at WARN level!
-2014-10-01T17:27:57.197Z ERROR Stats: I'll log at ERROR level!
-2014-10-01T17:27:57.198Z WARN Stats: I'll log at WARN level!
-2014-10-01T17:27:57.198Z ERROR Stats: I'll log at ERROR level!
-2014-10-01T17:27:57.198Z INFO New Name!: My log level is 0
+2014-10-01T17:27:57.188Z DBG Stats: I'll log at DEBUG level!
+2014-10-01T17:27:57.197Z INF Stats: I'll log at INFO level!
+2014-10-01T17:27:57.197Z WRN Stats: I'll log at WARN level!
+2014-10-01T17:27:57.197Z ERR Stats: I'll log at ERROR level!
+2014-10-01T17:27:57.198Z WRN Stats: I'll log at WARN level!
+2014-10-01T17:27:57.198Z ERR Stats: I'll log at ERROR level!
+2014-10-01T17:27:57.198Z INF New Name!: My log level is 0
 
 ```
 
 ## Uploading Logs to a Server
-Logs can easily be uploaded to a server. When creating a logger pass a third
-parameter as *true*. You must also call *setUploadFn* on the Logger object and 
-provide a function that accepts two parameters, a string and a callback 
-function. The callback function is setup to follow the Node.js convention of 
-taking two parameters; the first being an error if one occured, otherwise it's
-null, the second being a result. Currently Logger doesn't look at the result, 
-but if an error occurs it will need to be notified via that first parameter 
-otherwise your logs will be deleted without having reached your server!
+This feature is not complete and or tested yet, so be mindful of that. 
+Currently it will only work on Chrome, Opera and Cordova applications that 
+support the FileSystem API.
 
-This feature is not complete yet so using it is not advised. (Pull Requests 
-welcome!)
+Logs can easily be uploaded to a server. Just call the _init_ method on the 
+Logger and set an _uploadFn_. This function must accept a string parameter and 
+a callback you need to call once the upload process completes or fails. 
+The callback function takes a single parameter, an error, if one occured. 
+An example is below.
 
 ```javascript
 
-Logger.getLogger('Stats', {
-	level: Logger.LEVELS.DEBUG
-}, true);
+function myUploadFn (jsonLogArray, callback) {
+	// Do your upload logic...
+	if (uploadError) {
+		callback(uploadError);
+	} else {
+		callback(null);
+	}
+}
 
-// Logs is a JSON String containing an Array of Objects
-Logger.setUploadFn(function (logs, callback) {
-	$.ajax({
-		url: 'someurl.com/logs',
-		contentType: 'application/json',
-		data: logs
-	})
-	.success(function() {
-		callback(null, null);
-	})
-	.error(function() {
-		callback('CRAP!', null);
-	});
+// Initialise the logger with an upload function
+Logger.init({
+	uploadFn: myUploadFn
+})
+
+// Anything logged using this logger will be uploaded
+// if its logged using INF or higher, they'll also be written
+// to the terminal/console
+Logger.getLogger('Stats', {
+	level: Logger.LEVELS.INF
+	upload: true,
+	silent: false
 });
+
 
 ```
 
@@ -114,22 +117,39 @@ in previous examples.
 * WARN
 * ERROR
 
+##### init(opts, callback)
+Initialise the LoggerFactory. Only required if you want to upload logs as it 
+will setup storage and an upload function. The options object passed can 
+contain:
+
+* meta - Extra data to upload with each log, e.g a uqique device ID or username.
+* uploadFn - A function that will handle uploading the JSON string of logs.
+* storageQuota - The amount of bytes allocated to store log data.
+
+```
+var Logger = require('fhlog');
+
+Logger.init({
+	uploadFn: myUploadFn,
+	meta: {
+		deviceId: '123abc'
+	},
+	stroageQuota: 50 * Math.pow(3, 1024) // 50MB of logs can be stored
+});
+
+```
+
 ##### setGlobalLevel(level)
 Set all loggers to the provided level.
 
 ##### getLogger(name, opts)
 Get a logger prefixed with the given _name_. Valid options for the _opts_ are:
 
-* level - Defaults to _LEVELS.DEBUG_.
+* level - Defaults to _LEVELS.DBG_.
 * upload - Defaults to _false_.
 * silent - Defaults to _false_.
-* colourise - Defaults to _true_. Colours don't work in the browser.
-
-##### setUploadFn(function)
-Set the function used to upload logs to a server. This is demonstrated above.
-
-##### upload(callback)
-Force the logs to be uploaded. By default they upload once per minute.
+* colourise - Defaults to _true_. Colours don't work in the browser so this is 
+ignored.
 
 
 ### Logger
@@ -146,16 +166,16 @@ Set this Logger to suppress printing logs to th _console_ or _stdout/sterr_
 Detect if this Logger is silent or not. Returns a Boolean
 
 ##### debug(str)
-Print a log at DEBUG level. Works just like regular console.log.
+Print a log at DBG level. Works like regular console.debug.
 
 ##### info(str)
-Print a log at INFO level. Works just like regular console.log.
+Print a log at INF level. Works like regular console.info.
 
 ##### warn(str)
-Print a log at WARN level. Works just like regular console.log.
+Print a log at WRN level. Works like regular console.warn.
 
 ##### error(str)
-Print a log at ERROR level. Works just like regular console.log.
+Print a log at ERR level. Works like regular console.error.
 
 ##### err(str)
 Shorthand for the _error_ method.

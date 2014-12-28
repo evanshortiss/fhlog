@@ -8,7 +8,7 @@ var TEST_NAME = 'abc123'
   , TEST_ARGS = ['Is maith liom %s', 'cáca milis']
   , LOG_RES = 'Is maith liom cáca milis';
 
-var l = new Logger(TEST_NAME, LEVELS.INFO);
+var l = new Logger(TEST_NAME, LEVELS.INF);
 
 describe('Logger', function () {
 
@@ -32,22 +32,24 @@ describe('Logger', function () {
   });
 
   it('#getName Should return the passed logger name', function () {
-    var lgr = new Logger(TEST_NAME, LEVELS.INFO);
+    var lgr = new Logger(TEST_NAME, LEVELS.INF);
     assert.equal(TEST_NAME, lgr.getName());
   });
 
   it('#getLogLevel Should return the passed log level to constructor', function () {
-    var lgr = new Logger(TEST_NAME, LEVELS.DEBUG);
-    assert.equal(lgr.getLogLevel(), LEVELS.DEBUG);
+    var lgr = new Logger(TEST_NAME, {
+      level:LEVELS.DBG
+    });
+    assert.equal(lgr.getLogLevel(), LEVELS.DBG);
   });
 
   it('#setName Should set log level and retrieve new value', function () {
     var setLogLevel = l.getName()
       , newName = Math.random().toString();
 
-    var lgr = new Logger(TEST_NAME, LEVELS.INFO);
-    lgr.setLogLevel(LEVELS.WARN);
+    var lgr = new Logger(TEST_NAME, LEVELS.INF);
+    lgr.setLogLevel(LEVELS.WRN);
 
-    assert.equal(lgr.getLogLevel(), LEVELS.WARN);
+    assert.equal(lgr.getLogLevel(), LEVELS.WRN);
   });
 });

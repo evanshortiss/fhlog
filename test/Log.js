@@ -12,7 +12,7 @@ describe('Log', function () {
 
   it('Should create a log object', function () {
     var l = new Log({
-      level: LEVELS.INFO,
+      level: LEVELS.INF,
       name: TEST_NAME
     }, TEST_ARGS);
 
@@ -21,7 +21,7 @@ describe('Log', function () {
 
   it('#print Should return a formatted log string', function () {
     var l = new Log({
-      level: LEVELS.INFO,
+      level: LEVELS.INF,
       name: TEST_NAME
     }, TEST_ARGS);
 
@@ -30,7 +30,7 @@ describe('Log', function () {
 
   it('#toJSON Should return a JSON Object with expected fields', function () {
     var l = new Log({
-      level: LEVELS.INFO,
+      level: LEVELS.INF,
       name: TEST_NAME
     }, TEST_ARGS)
       , res = l.toJSON();
@@ -39,12 +39,12 @@ describe('Log', function () {
     assert.equal(typeof res.ts, 'number');
     assert.equal(res.name, TEST_NAME);
     assert.notEqual(res.text.indexOf(LOG_RES), -1);
-    assert.equal(res.level, LEVELS.INFO);
+    assert.equal(res.level, LEVELS.INF);
   });
 
   it('#getDate Should return today\'s date', function () {
     var l = new Log({
-      level: LEVELS.INFO
+      level: LEVELS.INF
     }, TEST_NAME, TEST_ARGS);
 
     assert.equal(l.getDate(), new Date().toJSON().substr(0, 10));

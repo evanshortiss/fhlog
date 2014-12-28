@@ -21,10 +21,10 @@ exports.green = function (str) {
 'use strict';
 
 module.exports = {
-  'DEBUG': 0,
-  'INFO': 1,
-  'WARN': 2,
-  'ERROR': 3
+  'DBG': 0,
+  'INF': 1,
+  'WRN': 2,
+  'ERR': 3
 };
 
 },{}],3:[function(_dereq_,module,exports){
@@ -33,28 +33,34 @@ module.exports = {
 var util = _dereq_('util')
   , _ = _dereq_('lodash')
   , transport = _dereq_('./transport')
-  , LEVELS = _dereq_('./Levels');
+  , LEVELS = _dereq_('./Levels')
+  , meta = _dereq_('./Meta');
 
 // Enable colourisation - this isn't enabled for browsers
 var colours = _dereq_('colors/safe');
 
 
+/**
+ * Get the level string for a log, e.g "INF", "DBG" etc.
+ * Also adds colour to the when enabled.
+ * @param  {Object} opts
+ */
 function getLevelStr (opts) {
   var lvlStr = _.invert(LEVELS)[opts.level]
     , useColours = opts.colourise || true;
 
   if (useColours) {
     switch (opts.level) {
-      case LEVELS.DEBUG:
+      case LEVELS.DBG:
         lvlStr = colours.magenta(lvlStr);
         break;
-      case LEVELS.INFO:
+      case LEVELS.INF:
         lvlStr = colours.green(lvlStr);
         break;
-      case LEVELS.WARN:
+      case LEVELS.WRN:
         lvlStr = colours.yellow(lvlStr);
         break;
-      case LEVELS.ERROR:
+      case LEVELS.ERR:
         lvlStr = colours.red(lvlStr);
         break;
     }
@@ -126,20 +132,17 @@ Log.prototype.toJSON = function () {
     ts: this.ts,
     text: this.text,
     name: this.name,
-    level: this.level
+    level: this.level,
+    meta: meta.get()
   };
 };
 
-},{"./Levels":2,"./transport":9,"colors/safe":1,"lodash":14,"util":13}],4:[function(_dereq_,module,exports){
-(function (process){
+},{"./Levels":2,"./Meta":6,"./transport":10,"colors/safe":1,"lodash":20,"util":16}],4:[function(_dereq_,module,exports){
 'use strict';
 
 var Log = _dereq_('./Log')
+  , persistence = _dereq_('./persistence')
   , LEVELS = _dereq_('./Levels');
-
-if (typeof process === 'undefined' && typeof window !== 'undefined') {
-  var Storage = _dereq_('./Storage');
-}
 
 /**
  * @constructor
@@ -154,7 +157,7 @@ function Logger (name, opts) {
   opts = opts || {};
 
   this._name = name || '';
-  this._logLevel = opts.level || this.LEVELS.DEBUG;
+  this._logLevel = opts.level || LEVELS.DBG;
   this._upload = opts.upload || false;
   this._silent = opts.silent || false;
   this._colourise = opts.colourise || true;
@@ -179,13 +182,13 @@ Logger.prototype._log = function(level, args) {
   }
 
   var l = new Log({
-    colourise: this.colourise,
+    colourise: this._colourise,
     level: level,
     name: this.getName()
   }, args);
 
-  if (Storage && this._upload) {
-    Storage.writeLog(l);
+  if (this._upload) {
+    persistence.writeLog(l);
   }
 
   return l.print(!this.isSilent());
@@ -221,7 +224,7 @@ Logger.prototype.isSilent = function () {
  * @returns {String}
  */
 Logger.prototype.debug = function () {
-  return this._log(LEVELS.DEBUG, arguments);
+  return this._log(LEVELS.DBG, arguments);
 };
 
 
@@ -234,7 +237,7 @@ Logger.prototype.debug = function () {
  * @returns {String}
  */
 Logger.prototype.info = function () {
-  return this._log(LEVELS.INFO, arguments);
+  return this._log(LEVELS.INF, arguments);
 };
 
 
@@ -247,7 +250,7 @@ Logger.prototype.info = function () {
  * @returns {String}
  */
 Logger.prototype.warn = function () {
-  return this._log(LEVELS.WARN, arguments);
+  return this._log(LEVELS.WRN, arguments);
 };
 
 
@@ -260,7 +263,7 @@ Logger.prototype.warn = function () {
  * @returns {String}
  */
 Logger.prototype.err = function () {
-  return this._log(LEVELS.ERROR, arguments);
+  return this._log(LEVELS.ERR, arguments);
 };
 
 
@@ -314,41 +317,62 @@ Logger.prototype.setName = function(name) {
   this._name = name;
 };
 
-}).call(this,_dereq_("FWaASH"))
-},{"./Levels":2,"./Log":3,"./Storage":6,"FWaASH":11}],5:[function(_dereq_,module,exports){
+},{"./Levels":2,"./Log":3,"./persistence":8}],5:[function(_dereq_,module,exports){
 'use strict';
 
 var Logger = _dereq_('./Logger')
-  , Uploader = _dereq_('./Uploader')
-  , LEVELS = _dereq_('./Levels');
+  , LEVELS = _dereq_('./Levels')
+  , persistence = _dereq_('./Persistence')
+  , meta = _dereq_('./Meta');
 
 
 // Map of loggers created. Same name loggers exist only once.
 var loggers = {};
 
+
+/**
+ * @public
+ * The Log levels available for use.
+ * @type {Object}
+ */
+exports.LEVELS = LEVELS;
+
+
+/**
+ * @public
+ * Set the global log level for all log instances.
+ * @param {[type]} level [description]
+ */
 exports.setGlobalLevel = function (level) {
   for (var i in loggers) {
     loggers[i].setLogLevel(level);
   }
 };
 
-exports.LEVELS = LEVELS;
+
+/**
+ * @public
+ * Initialise the log library.
+ * @param  {Object}   opts
+ * @param  {Function} callback
+ */
+exports.init = function (opts, callback) {
+  // Ensure metadata is set for each log
+  meta.set(opts.meta || {});
+
+  persistence.init(opts, callback);
+};
+
 
 /**
  * @public
  * Get a named logger instance creating it if it doesn't already exist.
  * @param   {String}    [name]
- * @param   {Number}    [level]
- * @param   {Boolean}   [upload]
- * @param   {Boolean}   [silent]
+ * @param   {Object}    [opts]
  * @returns {Logger}
  */
 exports.getLogger = function (name, opts) {
   name = name || '';
-
-  if (opts && opts.upload) {
-    Uploader.startInterval();
-  }
 
   if (loggers[name]) {
     return loggers[name];
@@ -359,251 +383,278 @@ exports.getLogger = function (name, opts) {
   }
 };
 
-
-/**
- * @public
- * Set the function that will be used to upload logs.
- * @param {Function} uploadFn
- */
-exports.setUploadFn = Uploader.setUploadFn;
-
-
-/**
- * @public
- * Force logs to upload at this time.
- * @param {Function} [callback]
- */
-exports.upload = Uploader.upload;
-
-},{"./Levels":2,"./Logger":4,"./Uploader":7}],6:[function(_dereq_,module,exports){
+},{"./Levels":2,"./Logger":4,"./Meta":6,"./Persistence":7}],6:[function(_dereq_,module,exports){
 'use strict';
 
-// Filthy hack for node.js testing, in the future storage should be shelled
-// out to storage adapter classes and this acts as an interface only
-var w = {};
-if (typeof window !== 'undefined') {
-  w = window;
+var meta = {};
+
+function verifyMeta (m) {
+  try {
+    JSON.stringify(m);
+  } catch (e) {
+    throw new Error('Meta for logs must be a serialisable object.');
+  }
 }
 
-var ls = w.localStorage
-  , safejson = _dereq_('safejson');
-
-var INDEX_KEY = '_log_indexes_';
-
-
-/**
- * Generate an index from a given Log Object.
- * @param {Log} log
- */
-function genIndex (log) {
-  return '_logs_' + log.getDate();
+function get () {
+  return meta;
 }
 
+function set (m) {
+  verifyMeta(m);
 
-/**
- * Get all indexes (days of logs)
- * @param {Function}
- */
-var getIndexes = exports.getIndexes = function (callback) {
-  var indexes = ls.getItem(INDEX_KEY);
+  meta = m;
+}
 
-  safejson.parse(indexes, function (err, res) {
-    if (err) {
-      return callback(err, null);
-    } else {
-      res = res || [];
-      return callback(null, res);
-    }
-  });
+module.exports = {
+  get: get,
+  set: set
 };
 
+},{}],7:[function(_dereq_,module,exports){
+'use strict';
+
+var safejson = _dereq_('safejson')
+  , async = _dereq_('async')
+  , path = _dereq_('path')
+  , fs = _dereq_('html5-fs')
+  , _ = _dereq_('lodash');
+
+// Priority based queue to store log file ops.
+// Writes are highest priority, we don't want to lose logs!
+var opQ = async.priorityQueue(runQueueTask, 1);
+
+// Function that must be set to upload logs to a remote endpoint
+var uploadFn = null;
+
+var LOG_DIR = './fhlogs'
+  , FILE_EXT = '.txt'
+  , TASK_PRIORITY = {
+    WRITE: 1,
+    UPLOAD: 2,
+  }
+  , DEFAULT_STORAGE_QUOTA = 25 * Math.pow(3, 1024) // Max log storage is 25MB
+  , MAX_FILE_SIZE = 10 * Math.pow(2, 1024); // Max file size is 10KB
+
+
+function runQueueTask (task, callback) {
+  // TODO: Handle errors passed to the callback
+  task.fn(callback);
+}
+
 
 /**
- * Update log indexes based on a new log.
- * @param {Log}       log
- * @param {Function}  callback
+ * Get a list of all the current log files
+ * @param  {Function} callback
  */
-function updateIndexes (log, callback) {
-  getIndexes(function (err, indexes) {
-    var idx = genIndex(log);
+function getLogFiles (callback) {
+  fs.readdir(LOG_DIR, callback);
+}
 
-    // Do we update indexes?
-    if (indexes.indexOf(idx) === -1) {
-      indexes.push(idx);
 
-      safejson.stringify(indexes, function (err, idxs) {
-        try {
-          ls.setItem(idx, idxs);
-          return callback(null, indexes);
-        } catch (e) {
-          return callback(e, null);
-        }
+/**
+ * Get the name of the most recent log file
+ * @param  {Array}    files
+ * @param  {Function} callback
+ */
+function getOldestFilename (callback) {
+  getLogFiles(function (err, files) {
+    if (err) {
+      callback(err, null);
+    } else {
+      var file = _.min(files, function (f) {
+        // Remove extension to get just the timestamp
+        var ts = f.name.replace(FILE_EXT, '');
+
+        return parseInt(ts, 10);
       });
-    } else {
-      return callback(null, null);
+
+      callback(null, file.name);
     }
   });
 }
 
 
 /**
- * Get all logs for a date/index
- * @param {String}    index
- * @param {Function}  callback
+ * Get the name of the most recent log file
+ * @param  {Array}    files
+ * @param  {Function} callback
  */
-var getLogsForIndex = exports.getLogsForIndex = function (index, callback) {
-  safejson.parse(ls.getItem(index), function (err, logs) {
+function getMostRecentFilename (callback) {
+  getLogFiles(function (err, files) {
     if (err) {
-      return callback(err, null);
+      callback(err, null);
     } else {
-      // If this date isn't created yet, do so now
-      logs = logs || [];
+      var file = _.max(files, function (f) {
+        // Remove extension to get just the timestamp
+        var ts = f.name.replace(FILE_EXT, '');
 
-      return callback(null, logs);
-    }
-  });
-};
+        return parseInt(ts, 10);
+      });
 
-
-/**
- * Save logs for the given date (index)
- * @param {String}
- * @param {Array}
- * @param {Function}
- */
-function saveLogsForIndex (logsIndex, logs, callback) {
-  safejson.stringify(logs, function (err, res) {
-    if (err) {
-      return callback(err, null);
-    } else {
-      ls.setItem(logsIndex, res);
-
-      return callback(null, logs);
+      callback(null, file.name);
     }
   });
 }
 
 
 /**
- * Write a log to permanent storage
- * @param {Log}
- * @param {Function}
+ * Determine the file to write the current log file to
+ * @param  {String}   name
+ * @param  {Function} callback
  */
-exports.writeLog = function (log, callback) {
-  updateIndexes(log, function (err) {
-    if (err) {
-      return callback(err, null);
-    }
+function getRequiredFilename (name, callback) {
+  var filepath = path.join(LOG_DIR, name);
 
-    var logsIndex = genIndex(log);
-
-    getLogsForIndex(logsIndex, function (err, logs) {
-      logs.push(log.toJSON());
-
-      saveLogsForIndex(logsIndex, logs, callback);
-    });
-  });
-};
-
-},{"safejson":15}],7:[function(_dereq_,module,exports){
-'use strict';
-
-var Storage = _dereq_('./Storage')
-  , safejson = _dereq_('safejson');
-
-
-var uploadFn = null
-  , uploadInProgress = false
-  , uploadTimer = null;
-
-
-function defaultUploadCallback(err) {
-  if (err) {
-    console.error('logger encountered an error uploading logs', err);
-  }
-}
-
-
-/**
- * Start the timer to upload logs in intervals.
- */
-exports.startInterval = function () {
-  if (!uploadTimer) {
-    var self = this;
-
-    uploadTimer = setInterval(function () {
-      self.upload();
-    }, 60000);
-  }
-};
-
-
-/**
- * Set the function that should be used to upload logs.
- * @param {Function} fn
- */
-exports.setUploadFn = function (fn) {
-  uploadFn = fn;
-};
-
-
-/**
- * Get the function being used to upload logs.
- * @return {Function}
- */
-exports.getUploadFn = function () {
-  return uploadFn;
-};
-
-
-/**
- * Upload logs, always uploads the oldest day of logs first.
- * @param {Function}
- */
-exports.upload = function (callback) {
-  // Set a callback for upload complete
-  callback = callback || defaultUploadCallback;
-
-  if (!uploadFn) {
-    return callback('Called upload without setting an upload function');
-  }
-
-  if (!uploadInProgress) {
-    console.log('Upload already in progress. Skipping second call.');
-    return callback(null, null);
-  }
-
-  // Flag that we are uploading
-  uploadInProgress = true;
-
-  Storage.getIndexes(function (err, idxs) {
-    if (idxs.length === 0) {
-      uploadInProgress = false;
-
-      return callback(null, null);
-    }
-
-    // Oldest logs should be uploaded first
-    var date = idxs.sort()[0];
-
-    Storage.getLogsForIndex(date, function (err, logs) {
+  function getStats () {
+    fs.stat(filepath, function (err, stats) {
       if (err) {
-        uploadInProgress = false;
-
-        return callback(err, null);
+        callback(err, null);
+      } else if (stats && stats.size >= MAX_FILE_SIZE) {
+        createFile();
+      } else {
+        callback(null, name);
       }
-
-      safejson.stringify(logs, function (err, str) {
-        uploadFn(str,  function (err) {
-          uploadInProgress = false;
-          callback(err, null);
-        });
-      });
     });
+  }
+
+  function createFile () {
+    var newName = Date.now().toString().concat(FILE_EXT);
+    filepath = path.join(LOG_DIR, newName);
+
+    fs.writeFile(filepath, '[]', function (err) {
+      if (err) {
+        callback(err, null);
+      } else {
+        callback(null, newName);
+      }
+    });
+  }
+
+  fs.exists(filepath, function (exists) {
+    if (exists) {
+      getStats();
+    } else {
+      createFile();
+    }
   });
+}
+
+
+/**
+ * Generates a function that will perform logic required
+ * to update a log file with a new log entry.
+ * @param  {Log} log [description]
+ */
+function getWriteFunction(log) {
+  return function writeLogFile (name, cb) {
+    var dir = path.join(LOG_DIR, name);
+
+    function readFile (name, cb) {
+      fs.readFile(dir, cb);
+    }
+
+    function updateLogs (logs, cb) {
+      logs.push(log.toJSON());
+      cb(null, logs);
+    }
+
+    function writeFile (str, cb) {
+      fs.writeFile(dir, str, cb);
+    }
+
+    async.waterfall([
+      readFile,
+      safejson.parse,
+      updateLogs,
+      safejson.stringify,
+      writeFile
+    ], cb);
+  };
+}
+
+
+/**
+ * Read a log file with the given name
+ * @param  {String}   name
+ * @param  {Function} callback
+ */
+function readLogFile(name, callback) {
+  fs.readFile(path.join(LOG_DIR, name), callback);
+}
+
+
+/**
+ * Delete a log file with the given name
+ * @param  {String}   name
+ * @param  {Function} callback
+ */
+function deleteFile(name, callback) {
+  fs.unlink(path.join(LOG_DIR, name), callback);
+}
+
+
+/**
+ * [init description]
+ * @param  {[type]}   opts     [description]
+ * @param  {Function} callback [description]
+ * @return {[type]}            [description]
+ */
+exports.init = function (opts, callback) {
+  var quota = opts.stroageQuota || DEFAULT_STORAGE_QUOTA;
+  uploadFn = opts.uploadFn || null;
+
+  fs.init(quota, callback);
 };
 
-},{"./Storage":6,"safejson":15}],8:[function(_dereq_,module,exports){
+
+/**
+ * Write a log to storage for uploading later.
+ * @param  {Log} log
+ */
+exports.writeLog = function (log) {
+
+  // TODO: Idea. Maybe queue Log objects and do this write on an interval?
+  // Basically write in batches every second to avoid to many I/O ops
+
+  function writeOp (callback) {
+    async.waterfall([
+      getMostRecentFilename,
+      getRequiredFilename,
+      getWriteFunction(log)
+    ], callback);
+  }
+
+  // Queue this operation with the highest priority
+  opQ.push({
+    fn: writeOp
+  }, TASK_PRIORITY.WRITE);
+};
+
+
+/**
+ * Upload the stored logs, using a FIFO strategy.
+ */
+exports.uploadLogs = function () {
+
+  function uploadOp (callback) {
+    async.waterfall([
+      getOldestFilename,
+      readLogFile,
+      uploadFn,
+      getOldestFilename,
+      deleteFile
+    ], callback);
+  }
+
+  opQ.push({
+    fn: uploadOp
+  }, TASK_PRIORITY.UPLOAD);
+};
+
+},{"async":11,"html5-fs":17,"lodash":20,"path":13,"safejson":21}],8:[function(_dereq_,module,exports){
+module.exports=_dereq_(7)
+},{"async":11,"html5-fs":17,"lodash":20,"path":13,"safejson":21}],9:[function(_dereq_,module,exports){
 'use strict';
 
 var LEVELS = _dereq_('../Levels');
@@ -638,7 +689,7 @@ module.exports = function (level, str) {
   logFn.call(console, str);
 };
 
-},{"../Levels":2}],9:[function(_dereq_,module,exports){
+},{"../Levels":2}],10:[function(_dereq_,module,exports){
 'use strict';
 
 
@@ -661,7 +712,1134 @@ exports.log = function (level, str) {
   }
 };
 
-},{"./console":8}],10:[function(_dereq_,module,exports){
+},{"./console":9}],11:[function(_dereq_,module,exports){
+(function (process){
+/*!
+ * async
+ * https://github.com/caolan/async
+ *
+ * Copyright 2010-2014 Caolan McMahon
+ * Released under the MIT license
+ */
+/*jshint onevar: false, indent:4 */
+/*global setImmediate: false, setTimeout: false, console: false */
+(function () {
+
+    var async = {};
+
+    // global on the server, window in the browser
+    var root, previous_async;
+
+    root = this;
+    if (root != null) {
+      previous_async = root.async;
+    }
+
+    async.noConflict = function () {
+        root.async = previous_async;
+        return async;
+    };
+
+    function only_once(fn) {
+        var called = false;
+        return function() {
+            if (called) throw new Error("Callback was already called.");
+            called = true;
+            fn.apply(root, arguments);
+        }
+    }
+
+    //// cross-browser compatiblity functions ////
+
+    var _toString = Object.prototype.toString;
+
+    var _isArray = Array.isArray || function (obj) {
+        return _toString.call(obj) === '[object Array]';
+    };
+
+    var _each = function (arr, iterator) {
+        if (arr.forEach) {
+            return arr.forEach(iterator);
+        }
+        for (var i = 0; i < arr.length; i += 1) {
+            iterator(arr[i], i, arr);
+        }
+    };
+
+    var _map = function (arr, iterator) {
+        if (arr.map) {
+            return arr.map(iterator);
+        }
+        var results = [];
+        _each(arr, function (x, i, a) {
+            results.push(iterator(x, i, a));
+        });
+        return results;
+    };
+
+    var _reduce = function (arr, iterator, memo) {
+        if (arr.reduce) {
+            return arr.reduce(iterator, memo);
+        }
+        _each(arr, function (x, i, a) {
+            memo = iterator(memo, x, i, a);
+        });
+        return memo;
+    };
+
+    var _keys = function (obj) {
+        if (Object.keys) {
+            return Object.keys(obj);
+        }
+        var keys = [];
+        for (var k in obj) {
+            if (obj.hasOwnProperty(k)) {
+                keys.push(k);
+            }
+        }
+        return keys;
+    };
+
+    //// exported async module functions ////
+
+    //// nextTick implementation with browser-compatible fallback ////
+    if (typeof process === 'undefined' || !(process.nextTick)) {
+        if (typeof setImmediate === 'function') {
+            async.nextTick = function (fn) {
+                // not a direct alias for IE10 compatibility
+                setImmediate(fn);
+            };
+            async.setImmediate = async.nextTick;
+        }
+        else {
+            async.nextTick = function (fn) {
+                setTimeout(fn, 0);
+            };
+            async.setImmediate = async.nextTick;
+        }
+    }
+    else {
+        async.nextTick = process.nextTick;
+        if (typeof setImmediate !== 'undefined') {
+            async.setImmediate = function (fn) {
+              // not a direct alias for IE10 compatibility
+              setImmediate(fn);
+            };
+        }
+        else {
+            async.setImmediate = async.nextTick;
+        }
+    }
+
+    async.each = function (arr, iterator, callback) {
+        callback = callback || function () {};
+        if (!arr.length) {
+            return callback();
+        }
+        var completed = 0;
+        _each(arr, function (x) {
+            iterator(x, only_once(done) );
+        });
+        function done(err) {
+          if (err) {
+              callback(err);
+              callback = function () {};
+          }
+          else {
+              completed += 1;
+              if (completed >= arr.length) {
+                  callback();
+              }
+          }
+        }
+    };
+    async.forEach = async.each;
+
+    async.eachSeries = function (arr, iterator, callback) {
+        callback = callback || function () {};
+        if (!arr.length) {
+            return callback();
+        }
+        var completed = 0;
+        var iterate = function () {
+            iterator(arr[completed], function (err) {
+                if (err) {
+                    callback(err);
+                    callback = function () {};
+                }
+                else {
+                    completed += 1;
+                    if (completed >= arr.length) {
+                        callback();
+                    }
+                    else {
+                        iterate();
+                    }
+                }
+            });
+        };
+        iterate();
+    };
+    async.forEachSeries = async.eachSeries;
+
+    async.eachLimit = function (arr, limit, iterator, callback) {
+        var fn = _eachLimit(limit);
+        fn.apply(null, [arr, iterator, callback]);
+    };
+    async.forEachLimit = async.eachLimit;
+
+    var _eachLimit = function (limit) {
+
+        return function (arr, iterator, callback) {
+            callback = callback || function () {};
+            if (!arr.length || limit <= 0) {
+                return callback();
+            }
+            var completed = 0;
+            var started = 0;
+            var running = 0;
+
+            (function replenish () {
+                if (completed >= arr.length) {
+                    return callback();
+                }
+
+                while (running < limit && started < arr.length) {
+                    started += 1;
+                    running += 1;
+                    iterator(arr[started - 1], function (err) {
+                        if (err) {
+                            callback(err);
+                            callback = function () {};
+                        }
+                        else {
+                            completed += 1;
+                            running -= 1;
+                            if (completed >= arr.length) {
+                                callback();
+                            }
+                            else {
+                                replenish();
+                            }
+                        }
+                    });
+                }
+            })();
+        };
+    };
+
+
+    var doParallel = function (fn) {
+        return function () {
+            var args = Array.prototype.slice.call(arguments);
+            return fn.apply(null, [async.each].concat(args));
+        };
+    };
+    var doParallelLimit = function(limit, fn) {
+        return function () {
+            var args = Array.prototype.slice.call(arguments);
+            return fn.apply(null, [_eachLimit(limit)].concat(args));
+        };
+    };
+    var doSeries = function (fn) {
+        return function () {
+            var args = Array.prototype.slice.call(arguments);
+            return fn.apply(null, [async.eachSeries].concat(args));
+        };
+    };
+
+
+    var _asyncMap = function (eachfn, arr, iterator, callback) {
+        arr = _map(arr, function (x, i) {
+            return {index: i, value: x};
+        });
+        if (!callback) {
+            eachfn(arr, function (x, callback) {
+                iterator(x.value, function (err) {
+                    callback(err);
+                });
+            });
+        } else {
+            var results = [];
+            eachfn(arr, function (x, callback) {
+                iterator(x.value, function (err, v) {
+                    results[x.index] = v;
+                    callback(err);
+                });
+            }, function (err) {
+                callback(err, results);
+            });
+        }
+    };
+    async.map = doParallel(_asyncMap);
+    async.mapSeries = doSeries(_asyncMap);
+    async.mapLimit = function (arr, limit, iterator, callback) {
+        return _mapLimit(limit)(arr, iterator, callback);
+    };
+
+    var _mapLimit = function(limit) {
+        return doParallelLimit(limit, _asyncMap);
+    };
+
+    // reduce only has a series version, as doing reduce in parallel won't
+    // work in many situations.
+    async.reduce = function (arr, memo, iterator, callback) {
+        async.eachSeries(arr, function (x, callback) {
+            iterator(memo, x, function (err, v) {
+                memo = v;
+                callback(err);
+            });
+        }, function (err) {
+            callback(err, memo);
+        });
+    };
+    // inject alias
+    async.inject = async.reduce;
+    // foldl alias
+    async.foldl = async.reduce;
+
+    async.reduceRight = function (arr, memo, iterator, callback) {
+        var reversed = _map(arr, function (x) {
+            return x;
+        }).reverse();
+        async.reduce(reversed, memo, iterator, callback);
+    };
+    // foldr alias
+    async.foldr = async.reduceRight;
+
+    var _filter = function (eachfn, arr, iterator, callback) {
+        var results = [];
+        arr = _map(arr, function (x, i) {
+            return {index: i, value: x};
+        });
+        eachfn(arr, function (x, callback) {
+            iterator(x.value, function (v) {
+                if (v) {
+                    results.push(x);
+                }
+                callback();
+            });
+        }, function (err) {
+            callback(_map(results.sort(function (a, b) {
+                return a.index - b.index;
+            }), function (x) {
+                return x.value;
+            }));
+        });
+    };
+    async.filter = doParallel(_filter);
+    async.filterSeries = doSeries(_filter);
+    // select alias
+    async.select = async.filter;
+    async.selectSeries = async.filterSeries;
+
+    var _reject = function (eachfn, arr, iterator, callback) {
+        var results = [];
+        arr = _map(arr, function (x, i) {
+            return {index: i, value: x};
+        });
+        eachfn(arr, function (x, callback) {
+            iterator(x.value, function (v) {
+                if (!v) {
+                    results.push(x);
+                }
+                callback();
+            });
+        }, function (err) {
+            callback(_map(results.sort(function (a, b) {
+                return a.index - b.index;
+            }), function (x) {
+                return x.value;
+            }));
+        });
+    };
+    async.reject = doParallel(_reject);
+    async.rejectSeries = doSeries(_reject);
+
+    var _detect = function (eachfn, arr, iterator, main_callback) {
+        eachfn(arr, function (x, callback) {
+            iterator(x, function (result) {
+                if (result) {
+                    main_callback(x);
+                    main_callback = function () {};
+                }
+                else {
+                    callback();
+                }
+            });
+        }, function (err) {
+            main_callback();
+        });
+    };
+    async.detect = doParallel(_detect);
+    async.detectSeries = doSeries(_detect);
+
+    async.some = function (arr, iterator, main_callback) {
+        async.each(arr, function (x, callback) {
+            iterator(x, function (v) {
+                if (v) {
+                    main_callback(true);
+                    main_callback = function () {};
+                }
+                callback();
+            });
+        }, function (err) {
+            main_callback(false);
+        });
+    };
+    // any alias
+    async.any = async.some;
+
+    async.every = function (arr, iterator, main_callback) {
+        async.each(arr, function (x, callback) {
+            iterator(x, function (v) {
+                if (!v) {
+                    main_callback(false);
+                    main_callback = function () {};
+                }
+                callback();
+            });
+        }, function (err) {
+            main_callback(true);
+        });
+    };
+    // all alias
+    async.all = async.every;
+
+    async.sortBy = function (arr, iterator, callback) {
+        async.map(arr, function (x, callback) {
+            iterator(x, function (err, criteria) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, {value: x, criteria: criteria});
+                }
+            });
+        }, function (err, results) {
+            if (err) {
+                return callback(err);
+            }
+            else {
+                var fn = function (left, right) {
+                    var a = left.criteria, b = right.criteria;
+                    return a < b ? -1 : a > b ? 1 : 0;
+                };
+                callback(null, _map(results.sort(fn), function (x) {
+                    return x.value;
+                }));
+            }
+        });
+    };
+
+    async.auto = function (tasks, callback) {
+        callback = callback || function () {};
+        var keys = _keys(tasks);
+        var remainingTasks = keys.length
+        if (!remainingTasks) {
+            return callback();
+        }
+
+        var results = {};
+
+        var listeners = [];
+        var addListener = function (fn) {
+            listeners.unshift(fn);
+        };
+        var removeListener = function (fn) {
+            for (var i = 0; i < listeners.length; i += 1) {
+                if (listeners[i] === fn) {
+                    listeners.splice(i, 1);
+                    return;
+                }
+            }
+        };
+        var taskComplete = function () {
+            remainingTasks--
+            _each(listeners.slice(0), function (fn) {
+                fn();
+            });
+        };
+
+        addListener(function () {
+            if (!remainingTasks) {
+                var theCallback = callback;
+                // prevent final callback from calling itself if it errors
+                callback = function () {};
+
+                theCallback(null, results);
+            }
+        });
+
+        _each(keys, function (k) {
+            var task = _isArray(tasks[k]) ? tasks[k]: [tasks[k]];
+            var taskCallback = function (err) {
+                var args = Array.prototype.slice.call(arguments, 1);
+                if (args.length <= 1) {
+                    args = args[0];
+                }
+                if (err) {
+                    var safeResults = {};
+                    _each(_keys(results), function(rkey) {
+                        safeResults[rkey] = results[rkey];
+                    });
+                    safeResults[k] = args;
+                    callback(err, safeResults);
+                    // stop subsequent errors hitting callback multiple times
+                    callback = function () {};
+                }
+                else {
+                    results[k] = args;
+                    async.setImmediate(taskComplete);
+                }
+            };
+            var requires = task.slice(0, Math.abs(task.length - 1)) || [];
+            var ready = function () {
+                return _reduce(requires, function (a, x) {
+                    return (a && results.hasOwnProperty(x));
+                }, true) && !results.hasOwnProperty(k);
+            };
+            if (ready()) {
+                task[task.length - 1](taskCallback, results);
+            }
+            else {
+                var listener = function () {
+                    if (ready()) {
+                        removeListener(listener);
+                        task[task.length - 1](taskCallback, results);
+                    }
+                };
+                addListener(listener);
+            }
+        });
+    };
+
+    async.retry = function(times, task, callback) {
+        var DEFAULT_TIMES = 5;
+        var attempts = [];
+        // Use defaults if times not passed
+        if (typeof times === 'function') {
+            callback = task;
+            task = times;
+            times = DEFAULT_TIMES;
+        }
+        // Make sure times is a number
+        times = parseInt(times, 10) || DEFAULT_TIMES;
+        var wrappedTask = function(wrappedCallback, wrappedResults) {
+            var retryAttempt = function(task, finalAttempt) {
+                return function(seriesCallback) {
+                    task(function(err, result){
+                        seriesCallback(!err || finalAttempt, {err: err, result: result});
+                    }, wrappedResults);
+                };
+            };
+            while (times) {
+                attempts.push(retryAttempt(task, !(times-=1)));
+            }
+            async.series(attempts, function(done, data){
+                data = data[data.length - 1];
+                (wrappedCallback || callback)(data.err, data.result);
+            });
+        }
+        // If a callback is passed, run this as a controll flow
+        return callback ? wrappedTask() : wrappedTask
+    };
+
+    async.waterfall = function (tasks, callback) {
+        callback = callback || function () {};
+        if (!_isArray(tasks)) {
+          var err = new Error('First argument to waterfall must be an array of functions');
+          return callback(err);
+        }
+        if (!tasks.length) {
+            return callback();
+        }
+        var wrapIterator = function (iterator) {
+            return function (err) {
+                if (err) {
+                    callback.apply(null, arguments);
+                    callback = function () {};
+                }
+                else {
+                    var args = Array.prototype.slice.call(arguments, 1);
+                    var next = iterator.next();
+                    if (next) {
+                        args.push(wrapIterator(next));
+                    }
+                    else {
+                        args.push(callback);
+                    }
+                    async.setImmediate(function () {
+                        iterator.apply(null, args);
+                    });
+                }
+            };
+        };
+        wrapIterator(async.iterator(tasks))();
+    };
+
+    var _parallel = function(eachfn, tasks, callback) {
+        callback = callback || function () {};
+        if (_isArray(tasks)) {
+            eachfn.map(tasks, function (fn, callback) {
+                if (fn) {
+                    fn(function (err) {
+                        var args = Array.prototype.slice.call(arguments, 1);
+                        if (args.length <= 1) {
+                            args = args[0];
+                        }
+                        callback.call(null, err, args);
+                    });
+                }
+            }, callback);
+        }
+        else {
+            var results = {};
+            eachfn.each(_keys(tasks), function (k, callback) {
+                tasks[k](function (err) {
+                    var args = Array.prototype.slice.call(arguments, 1);
+                    if (args.length <= 1) {
+                        args = args[0];
+                    }
+                    results[k] = args;
+                    callback(err);
+                });
+            }, function (err) {
+                callback(err, results);
+            });
+        }
+    };
+
+    async.parallel = function (tasks, callback) {
+        _parallel({ map: async.map, each: async.each }, tasks, callback);
+    };
+
+    async.parallelLimit = function(tasks, limit, callback) {
+        _parallel({ map: _mapLimit(limit), each: _eachLimit(limit) }, tasks, callback);
+    };
+
+    async.series = function (tasks, callback) {
+        callback = callback || function () {};
+        if (_isArray(tasks)) {
+            async.mapSeries(tasks, function (fn, callback) {
+                if (fn) {
+                    fn(function (err) {
+                        var args = Array.prototype.slice.call(arguments, 1);
+                        if (args.length <= 1) {
+                            args = args[0];
+                        }
+                        callback.call(null, err, args);
+                    });
+                }
+            }, callback);
+        }
+        else {
+            var results = {};
+            async.eachSeries(_keys(tasks), function (k, callback) {
+                tasks[k](function (err) {
+                    var args = Array.prototype.slice.call(arguments, 1);
+                    if (args.length <= 1) {
+                        args = args[0];
+                    }
+                    results[k] = args;
+                    callback(err);
+                });
+            }, function (err) {
+                callback(err, results);
+            });
+        }
+    };
+
+    async.iterator = function (tasks) {
+        var makeCallback = function (index) {
+            var fn = function () {
+                if (tasks.length) {
+                    tasks[index].apply(null, arguments);
+                }
+                return fn.next();
+            };
+            fn.next = function () {
+                return (index < tasks.length - 1) ? makeCallback(index + 1): null;
+            };
+            return fn;
+        };
+        return makeCallback(0);
+    };
+
+    async.apply = function (fn) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return function () {
+            return fn.apply(
+                null, args.concat(Array.prototype.slice.call(arguments))
+            );
+        };
+    };
+
+    var _concat = function (eachfn, arr, fn, callback) {
+        var r = [];
+        eachfn(arr, function (x, cb) {
+            fn(x, function (err, y) {
+                r = r.concat(y || []);
+                cb(err);
+            });
+        }, function (err) {
+            callback(err, r);
+        });
+    };
+    async.concat = doParallel(_concat);
+    async.concatSeries = doSeries(_concat);
+
+    async.whilst = function (test, iterator, callback) {
+        if (test()) {
+            iterator(function (err) {
+                if (err) {
+                    return callback(err);
+                }
+                async.whilst(test, iterator, callback);
+            });
+        }
+        else {
+            callback();
+        }
+    };
+
+    async.doWhilst = function (iterator, test, callback) {
+        iterator(function (err) {
+            if (err) {
+                return callback(err);
+            }
+            var args = Array.prototype.slice.call(arguments, 1);
+            if (test.apply(null, args)) {
+                async.doWhilst(iterator, test, callback);
+            }
+            else {
+                callback();
+            }
+        });
+    };
+
+    async.until = function (test, iterator, callback) {
+        if (!test()) {
+            iterator(function (err) {
+                if (err) {
+                    return callback(err);
+                }
+                async.until(test, iterator, callback);
+            });
+        }
+        else {
+            callback();
+        }
+    };
+
+    async.doUntil = function (iterator, test, callback) {
+        iterator(function (err) {
+            if (err) {
+                return callback(err);
+            }
+            var args = Array.prototype.slice.call(arguments, 1);
+            if (!test.apply(null, args)) {
+                async.doUntil(iterator, test, callback);
+            }
+            else {
+                callback();
+            }
+        });
+    };
+
+    async.queue = function (worker, concurrency) {
+        if (concurrency === undefined) {
+            concurrency = 1;
+        }
+        function _insert(q, data, pos, callback) {
+          if (!q.started){
+            q.started = true;
+          }
+          if (!_isArray(data)) {
+              data = [data];
+          }
+          if(data.length == 0) {
+             // call drain immediately if there are no tasks
+             return async.setImmediate(function() {
+                 if (q.drain) {
+                     q.drain();
+                 }
+             });
+          }
+          _each(data, function(task) {
+              var item = {
+                  data: task,
+                  callback: typeof callback === 'function' ? callback : null
+              };
+
+              if (pos) {
+                q.tasks.unshift(item);
+              } else {
+                q.tasks.push(item);
+              }
+
+              if (q.saturated && q.tasks.length === q.concurrency) {
+                  q.saturated();
+              }
+              async.setImmediate(q.process);
+          });
+        }
+
+        var workers = 0;
+        var q = {
+            tasks: [],
+            concurrency: concurrency,
+            saturated: null,
+            empty: null,
+            drain: null,
+            started: false,
+            paused: false,
+            push: function (data, callback) {
+              _insert(q, data, false, callback);
+            },
+            kill: function () {
+              q.drain = null;
+              q.tasks = [];
+            },
+            unshift: function (data, callback) {
+              _insert(q, data, true, callback);
+            },
+            process: function () {
+                if (!q.paused && workers < q.concurrency && q.tasks.length) {
+                    var task = q.tasks.shift();
+                    if (q.empty && q.tasks.length === 0) {
+                        q.empty();
+                    }
+                    workers += 1;
+                    var next = function () {
+                        workers -= 1;
+                        if (task.callback) {
+                            task.callback.apply(task, arguments);
+                        }
+                        if (q.drain && q.tasks.length + workers === 0) {
+                            q.drain();
+                        }
+                        q.process();
+                    };
+                    var cb = only_once(next);
+                    worker(task.data, cb);
+                }
+            },
+            length: function () {
+                return q.tasks.length;
+            },
+            running: function () {
+                return workers;
+            },
+            idle: function() {
+                return q.tasks.length + workers === 0;
+            },
+            pause: function () {
+                if (q.paused === true) { return; }
+                q.paused = true;
+                q.process();
+            },
+            resume: function () {
+                if (q.paused === false) { return; }
+                q.paused = false;
+                q.process();
+            }
+        };
+        return q;
+    };
+    
+    async.priorityQueue = function (worker, concurrency) {
+        
+        function _compareTasks(a, b){
+          return a.priority - b.priority;
+        };
+        
+        function _binarySearch(sequence, item, compare) {
+          var beg = -1,
+              end = sequence.length - 1;
+          while (beg < end) {
+            var mid = beg + ((end - beg + 1) >>> 1);
+            if (compare(item, sequence[mid]) >= 0) {
+              beg = mid;
+            } else {
+              end = mid - 1;
+            }
+          }
+          return beg;
+        }
+        
+        function _insert(q, data, priority, callback) {
+          if (!q.started){
+            q.started = true;
+          }
+          if (!_isArray(data)) {
+              data = [data];
+          }
+          if(data.length == 0) {
+             // call drain immediately if there are no tasks
+             return async.setImmediate(function() {
+                 if (q.drain) {
+                     q.drain();
+                 }
+             });
+          }
+          _each(data, function(task) {
+              var item = {
+                  data: task,
+                  priority: priority,
+                  callback: typeof callback === 'function' ? callback : null
+              };
+              
+              q.tasks.splice(_binarySearch(q.tasks, item, _compareTasks) + 1, 0, item);
+
+              if (q.saturated && q.tasks.length === q.concurrency) {
+                  q.saturated();
+              }
+              async.setImmediate(q.process);
+          });
+        }
+        
+        // Start with a normal queue
+        var q = async.queue(worker, concurrency);
+        
+        // Override push to accept second parameter representing priority
+        q.push = function (data, priority, callback) {
+          _insert(q, data, priority, callback);
+        };
+        
+        // Remove unshift function
+        delete q.unshift;
+
+        return q;
+    };
+
+    async.cargo = function (worker, payload) {
+        var working     = false,
+            tasks       = [];
+
+        var cargo = {
+            tasks: tasks,
+            payload: payload,
+            saturated: null,
+            empty: null,
+            drain: null,
+            drained: true,
+            push: function (data, callback) {
+                if (!_isArray(data)) {
+                    data = [data];
+                }
+                _each(data, function(task) {
+                    tasks.push({
+                        data: task,
+                        callback: typeof callback === 'function' ? callback : null
+                    });
+                    cargo.drained = false;
+                    if (cargo.saturated && tasks.length === payload) {
+                        cargo.saturated();
+                    }
+                });
+                async.setImmediate(cargo.process);
+            },
+            process: function process() {
+                if (working) return;
+                if (tasks.length === 0) {
+                    if(cargo.drain && !cargo.drained) cargo.drain();
+                    cargo.drained = true;
+                    return;
+                }
+
+                var ts = typeof payload === 'number'
+                            ? tasks.splice(0, payload)
+                            : tasks.splice(0, tasks.length);
+
+                var ds = _map(ts, function (task) {
+                    return task.data;
+                });
+
+                if(cargo.empty) cargo.empty();
+                working = true;
+                worker(ds, function () {
+                    working = false;
+
+                    var args = arguments;
+                    _each(ts, function (data) {
+                        if (data.callback) {
+                            data.callback.apply(null, args);
+                        }
+                    });
+
+                    process();
+                });
+            },
+            length: function () {
+                return tasks.length;
+            },
+            running: function () {
+                return working;
+            }
+        };
+        return cargo;
+    };
+
+    var _console_fn = function (name) {
+        return function (fn) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            fn.apply(null, args.concat([function (err) {
+                var args = Array.prototype.slice.call(arguments, 1);
+                if (typeof console !== 'undefined') {
+                    if (err) {
+                        if (console.error) {
+                            console.error(err);
+                        }
+                    }
+                    else if (console[name]) {
+                        _each(args, function (x) {
+                            console[name](x);
+                        });
+                    }
+                }
+            }]));
+        };
+    };
+    async.log = _console_fn('log');
+    async.dir = _console_fn('dir');
+    /*async.info = _console_fn('info');
+    async.warn = _console_fn('warn');
+    async.error = _console_fn('error');*/
+
+    async.memoize = function (fn, hasher) {
+        var memo = {};
+        var queues = {};
+        hasher = hasher || function (x) {
+            return x;
+        };
+        var memoized = function () {
+            var args = Array.prototype.slice.call(arguments);
+            var callback = args.pop();
+            var key = hasher.apply(null, args);
+            if (key in memo) {
+                async.nextTick(function () {
+                    callback.apply(null, memo[key]);
+                });
+            }
+            else if (key in queues) {
+                queues[key].push(callback);
+            }
+            else {
+                queues[key] = [callback];
+                fn.apply(null, args.concat([function () {
+                    memo[key] = arguments;
+                    var q = queues[key];
+                    delete queues[key];
+                    for (var i = 0, l = q.length; i < l; i++) {
+                      q[i].apply(null, arguments);
+                    }
+                }]));
+            }
+        };
+        memoized.memo = memo;
+        memoized.unmemoized = fn;
+        return memoized;
+    };
+
+    async.unmemoize = function (fn) {
+      return function () {
+        return (fn.unmemoized || fn).apply(null, arguments);
+      };
+    };
+
+    async.times = function (count, iterator, callback) {
+        var counter = [];
+        for (var i = 0; i < count; i++) {
+            counter.push(i);
+        }
+        return async.map(counter, iterator, callback);
+    };
+
+    async.timesSeries = function (count, iterator, callback) {
+        var counter = [];
+        for (var i = 0; i < count; i++) {
+            counter.push(i);
+        }
+        return async.mapSeries(counter, iterator, callback);
+    };
+
+    async.seq = function (/* functions... */) {
+        var fns = arguments;
+        return function () {
+            var that = this;
+            var args = Array.prototype.slice.call(arguments);
+            var callback = args.pop();
+            async.reduce(fns, args, function (newargs, fn, cb) {
+                fn.apply(that, newargs.concat([function () {
+                    var err = arguments[0];
+                    var nextargs = Array.prototype.slice.call(arguments, 1);
+                    cb(err, nextargs);
+                }]))
+            },
+            function (err, results) {
+                callback.apply(that, [err].concat(results));
+            });
+        };
+    };
+
+    async.compose = function (/* functions... */) {
+      return async.seq.apply(null, Array.prototype.reverse.call(arguments));
+    };
+
+    var _applyEach = function (eachfn, fns /*args...*/) {
+        var go = function () {
+            var that = this;
+            var args = Array.prototype.slice.call(arguments);
+            var callback = args.pop();
+            return eachfn(fns, function (fn, cb) {
+                fn.apply(that, args.concat([cb]));
+            },
+            callback);
+        };
+        if (arguments.length > 2) {
+            var args = Array.prototype.slice.call(arguments, 2);
+            return go.apply(this, args);
+        }
+        else {
+            return go;
+        }
+    };
+    async.applyEach = doParallel(_applyEach);
+    async.applyEachSeries = doSeries(_applyEach);
+
+    async.forever = function (fn, callback) {
+        function next(err) {
+            if (err) {
+                if (callback) {
+                    return callback(err);
+                }
+                throw err;
+            }
+            fn(next);
+        }
+        next();
+    };
+
+    // Node.js
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = async;
+    }
+    // AMD / RequireJS
+    else if (typeof define !== 'undefined' && define.amd) {
+        define([], function () {
+            return async;
+        });
+    }
+    // included directly via <script> tag
+    else {
+        root.async = async;
+    }
+
+}());
+
+}).call(this,_dereq_("FWaASH"))
+},{"FWaASH":14}],12:[function(_dereq_,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -686,7 +1864,235 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],11:[function(_dereq_,module,exports){
+},{}],13:[function(_dereq_,module,exports){
+(function (process){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// resolves . and .. elements in a path array with directory names there
+// must be no slashes, empty elements, or device names (c:\) in the array
+// (so also no leading and trailing slashes - it does not distinguish
+// relative and absolute paths)
+function normalizeArray(parts, allowAboveRoot) {
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = parts.length - 1; i >= 0; i--) {
+    var last = parts[i];
+    if (last === '.') {
+      parts.splice(i, 1);
+    } else if (last === '..') {
+      parts.splice(i, 1);
+      up++;
+    } else if (up) {
+      parts.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (allowAboveRoot) {
+    for (; up--; up) {
+      parts.unshift('..');
+    }
+  }
+
+  return parts;
+}
+
+// Split a filename into [root, dir, basename, ext], unix version
+// 'root' is just a slash, or nothing.
+var splitPathRe =
+    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+var splitPath = function(filename) {
+  return splitPathRe.exec(filename).slice(1);
+};
+
+// path.resolve([from ...], to)
+// posix version
+exports.resolve = function() {
+  var resolvedPath = '',
+      resolvedAbsolute = false;
+
+  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+    var path = (i >= 0) ? arguments[i] : process.cwd();
+
+    // Skip empty and invalid entries
+    if (typeof path !== 'string') {
+      throw new TypeError('Arguments to path.resolve must be strings');
+    } else if (!path) {
+      continue;
+    }
+
+    resolvedPath = path + '/' + resolvedPath;
+    resolvedAbsolute = path.charAt(0) === '/';
+  }
+
+  // At this point the path should be resolved to a full absolute path, but
+  // handle relative paths to be safe (might happen when process.cwd() fails)
+
+  // Normalize the path
+  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
+    return !!p;
+  }), !resolvedAbsolute).join('/');
+
+  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+};
+
+// path.normalize(path)
+// posix version
+exports.normalize = function(path) {
+  var isAbsolute = exports.isAbsolute(path),
+      trailingSlash = substr(path, -1) === '/';
+
+  // Normalize the path
+  path = normalizeArray(filter(path.split('/'), function(p) {
+    return !!p;
+  }), !isAbsolute).join('/');
+
+  if (!path && !isAbsolute) {
+    path = '.';
+  }
+  if (path && trailingSlash) {
+    path += '/';
+  }
+
+  return (isAbsolute ? '/' : '') + path;
+};
+
+// posix version
+exports.isAbsolute = function(path) {
+  return path.charAt(0) === '/';
+};
+
+// posix version
+exports.join = function() {
+  var paths = Array.prototype.slice.call(arguments, 0);
+  return exports.normalize(filter(paths, function(p, index) {
+    if (typeof p !== 'string') {
+      throw new TypeError('Arguments to path.join must be strings');
+    }
+    return p;
+  }).join('/'));
+};
+
+
+// path.relative(from, to)
+// posix version
+exports.relative = function(from, to) {
+  from = exports.resolve(from).substr(1);
+  to = exports.resolve(to).substr(1);
+
+  function trim(arr) {
+    var start = 0;
+    for (; start < arr.length; start++) {
+      if (arr[start] !== '') break;
+    }
+
+    var end = arr.length - 1;
+    for (; end >= 0; end--) {
+      if (arr[end] !== '') break;
+    }
+
+    if (start > end) return [];
+    return arr.slice(start, end - start + 1);
+  }
+
+  var fromParts = trim(from.split('/'));
+  var toParts = trim(to.split('/'));
+
+  var length = Math.min(fromParts.length, toParts.length);
+  var samePartsLength = length;
+  for (var i = 0; i < length; i++) {
+    if (fromParts[i] !== toParts[i]) {
+      samePartsLength = i;
+      break;
+    }
+  }
+
+  var outputParts = [];
+  for (var i = samePartsLength; i < fromParts.length; i++) {
+    outputParts.push('..');
+  }
+
+  outputParts = outputParts.concat(toParts.slice(samePartsLength));
+
+  return outputParts.join('/');
+};
+
+exports.sep = '/';
+exports.delimiter = ':';
+
+exports.dirname = function(path) {
+  var result = splitPath(path),
+      root = result[0],
+      dir = result[1];
+
+  if (!root && !dir) {
+    // No dirname whatsoever
+    return '.';
+  }
+
+  if (dir) {
+    // It has a dirname, strip trailing slash
+    dir = dir.substr(0, dir.length - 1);
+  }
+
+  return root + dir;
+};
+
+
+exports.basename = function(path, ext) {
+  var f = splitPath(path)[2];
+  // TODO: make this comparison case-insensitive on windows?
+  if (ext && f.substr(-1 * ext.length) === ext) {
+    f = f.substr(0, f.length - ext.length);
+  }
+  return f;
+};
+
+
+exports.extname = function(path) {
+  return splitPath(path)[3];
+};
+
+function filter (xs, f) {
+    if (xs.filter) return xs.filter(f);
+    var res = [];
+    for (var i = 0; i < xs.length; i++) {
+        if (f(xs[i], i, xs)) res.push(xs[i]);
+    }
+    return res;
+}
+
+// String.prototype.substr - negative index don't work in IE8
+var substr = 'ab'.substr(-1) === 'b'
+    ? function (str, start, len) { return str.substr(start, len) }
+    : function (str, start, len) {
+        if (start < 0) start = str.length + start;
+        return str.substr(start, len);
+    }
+;
+
+}).call(this,_dereq_("FWaASH"))
+},{"FWaASH":14}],14:[function(_dereq_,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -751,14 +2157,14 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],12:[function(_dereq_,module,exports){
+},{}],15:[function(_dereq_,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],13:[function(_dereq_,module,exports){
+},{}],16:[function(_dereq_,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -1348,7 +2754,502 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,_dereq_("FWaASH"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":12,"FWaASH":11,"inherits":10}],14:[function(_dereq_,module,exports){
+},{"./support/isBuffer":15,"FWaASH":14,"inherits":12}],17:[function(_dereq_,module,exports){
+'use strict';
+
+var utils = _dereq_('./utils')
+  , pathm = _dereq_('path')
+  , fs = _dereq_('./fileSystem');
+
+var wrapSuccess = utils.wrapSuccess
+  , wrapFail = utils.wrapFail;
+
+exports.getFsInstance = fs.getInstance;
+
+exports.appendFile = function(path, data, callback) {
+  fs.writeFile(path, data, callback, true);
+};
+
+
+exports.writeFile = function(path, data, callback) {
+  fs.writeFile(path, data, callback, false);
+};
+
+
+exports.readFile = function(path, opts, callback) {
+  if (typeof opts === 'function') {
+    callback = opts;
+    opts = {
+      encoding: 'utf8'
+    };
+  }
+
+  var success = wrapSuccess(callback)
+    , fail = wrapFail(callback);
+
+  fs.getFile(path, function(err, fileEntry) {
+    fileEntry.file(function(file) {
+      var reader = new FileReader();
+
+      reader.onloadend = function(evt) {
+        success(evt.target.result);
+      };
+
+      reader.onerror = function(err) {
+        fail(err);
+      };
+
+      if (opts.encoding === 'utf8') {
+        reader.readAsText(file);
+      } else {
+        reader.readAsDataURL(file);
+      }
+    }, fail);
+  });
+};
+
+
+exports.unlink = function(path, callback) {
+  var success = wrapSuccess(callback)
+    , fail = wrapFail(callback);
+
+  fs.getFile(path, function(err, file) {
+    if (err) {
+      fail(err);
+    } else {
+      file.remove(success, fail);
+    }
+  });
+};
+
+
+exports.readdir = function(path, callback) {
+  var success = wrapSuccess(callback)
+    , fail = wrapFail(callback);
+
+  fs.getDirectory(path, function(err, dirEntry) {
+    if (err) {
+      fail(err);
+    } else {
+      var directoryReader = dirEntry.createReader();
+      directoryReader.readEntries(success, fail);
+    }
+  });
+};
+
+
+exports.mkdir = function(path, callback) {
+  var newFolderName = pathm.basename(path)
+    , basePath = pathm.dirname(path)
+    , success = utils.wrapSuccess(callback)
+    , fail = utils.wrapFail(callback)
+    , opts = {
+      create: true,
+      exclusive: true
+    };
+
+  if (basePath === '.') {
+    fs.getDirectory(newFolderName, opts, callback);
+  } else {
+    fs.getDirectory(basePath, function (err, dir) {
+      if (err) {
+        callback(err, null);
+      } else {
+        dir.getDirectory(newFolderName, opts, success, fail);
+      }
+    });
+  }
+};
+
+
+/**
+ * Remove a directory.
+ * The FileSystem API expects directories to be empty but returns a
+ * non-informative error on Android and possibly iOS so we check here
+ * to ensure users know why directory deletes might fail.
+ * @param  {String}   path
+ * @param  {Function} callback
+ */
+exports.rmdir = function(path, callback) {
+  var success = wrapSuccess(callback)
+    , fail = wrapFail(callback);
+
+  this.readdir(path, function(err, list) {
+    if (err) {
+      fail(err);
+    } else if (list && list.length > 0) {
+      fail('ENOTEMPTY: Directory must be empty');
+    } else {
+      fs.getDirectory(path, function(err, dirEntry) {
+        if (err) {
+          fail(err);
+        } else {
+          dirEntry.remove(success, fail);
+        }
+      });
+    }
+  });
+};
+
+
+exports.exists = function(path, callback) {
+  var success = wrapSuccess(callback)
+    , fail = wrapFail(callback);
+
+  fs.getFile(path, {
+    // Don't create the file, just look for it
+    create: false
+  }, function(err) {
+    if (err && err.code === 1) { // NOT FOUND
+      // If the file isn't found we don't want an error, pass false!
+      success(false);
+    } else if (err) {
+      // An actual error occured, pass it along
+      fail(err);
+    } else {
+      success(true);
+    }
+  });
+};
+
+
+exports.stat = function(path, callback) {
+  var success = wrapSuccess(callback)
+    , fail = wrapFail(callback)
+    , fn = fs.getFile;
+
+  // TODO: Perhaps check for folder AND file instead, use whichever exists
+  if (utils.isDirectory(path)) {
+    fn = fs.getDirectory;
+  }
+
+  fn(path, function(err, res) {
+    if (err) {
+      fail(err);
+    } else {
+      res.getMetadata(success, fail);
+    }
+  });
+};
+
+
+/**
+ * Initialise the file system component for use.
+ * @param {Number}     [quota]
+ * @param {Function}   callback
+ */
+exports.init = function(bytes, callback) {
+  fs.init(bytes, function(err) {
+    if (err) {
+      callback(err, null);
+    } else {
+      fs.getInstance(function(err /*, instance */) {
+        callback(err, null);
+      });
+    }
+  });
+};
+
+},{"./fileSystem":18,"./utils":19,"path":13}],18:[function(_dereq_,module,exports){
+'use strict';
+
+var utils = _dereq_('./utils')
+  , pathm = _dereq_('path');
+
+var DEFAULT_QUOTA = (10 * 1024 * 1024); // 10MB
+
+var fileSystem = null;
+
+/**
+ * Get a FileSystem instance.
+ * @param {Function} callback
+ */
+exports.getInstance = function(callback) {
+  if (fileSystem) {
+    callback(null, fileSystem);
+  } else {
+    init(null, callback);
+  }
+};
+
+
+/**
+ * Initialises access to browser File System
+ * @param {Number}      bytes
+ * @param {Function}    callback
+ */
+var init = exports.init = function(bytes, callback) {
+  requestQuota(bytes, function(err, grantedBytes) {
+    if (err) {
+      return callback(err, null);
+    } else {
+      requestFileSystem(grantedBytes, function(instance) {
+        fileSystem = instance;
+        callback(null, grantedBytes);
+      }, function(err) {
+        callback(err, null);
+      });
+    }
+  });
+};
+
+
+/**
+ * Write data to a file optionally appending it.
+ * @param {String}      path
+ * @param {Mixed}       data
+ * @param {Function}    callback
+ * @param {Boolean}     append
+ */
+exports.writeFile = function(path, data, callback, append) {
+  var fail = utils.wrapFail(callback)
+    , success = utils.wrapSuccess(callback);
+
+  this.getFile(path, {
+    create: true,
+    exclusive: false
+  }, function(err, file) {
+    if (err) {
+      return callback(err, null);
+    } else {
+      file.createWriter(function(writer) {
+        writer.onwrite = function(/*evt*/) {
+          success(file.toURL());
+        };
+
+        writer.onerror = function(evt) {
+          fail(evt.target.error);
+        };
+
+        if (append === true) {
+          writer.seek(writer.length);
+        }
+
+        if (utils.isMobile()) {
+          writer.write(data);
+        } else {
+          // Only desktop has blob support AFAIK
+          writer.write(new Blob([data], {
+            type: 'text/plain'
+          }));
+        }
+      }, fail);
+    }
+  });
+};
+
+
+/**
+ * Get a directory specified by path.
+ * By default if the dir does not exist it is not created.
+ * @param {String}      path
+ * @param {Object}      [opts]
+ * @param {Function}    callback
+ */
+exports.getDirectory = function(path, opts, callback) {
+  if (!callback) {
+    callback = opts;
+    opts = {
+      create: false
+    };
+  }
+
+  var success = utils.wrapSuccess(callback)
+    , fail = utils.wrapFail(callback);
+
+  fileSystem.root.getDirectory(path, opts, success, fail);
+};
+
+
+/**
+ * Get a file at a specified path.
+ * By default if the file does not exist it is not created.
+ * @param {String}      path
+ * @param {Object}      [opts]
+ * @param {Function}    callback
+ */
+exports.getFile = function(path, opts, callback) {
+  if (!callback) {
+    callback = opts;
+    opts = {
+      create: false
+    };
+  }
+
+  var fileName = pathm.basename(path)
+    , basePath = pathm.dirname(path)
+    , success = utils.wrapSuccess(callback)
+    , fail = utils.wrapFail(callback);
+
+  function doGet (dirRef) {
+    dirRef.getFile(fileName, opts, success, fail);
+  }
+
+  if (basePath === '.') {
+    // File is in root directory
+    doGet(fileSystem.root);
+  } else {
+    // Need to get container directory ref for the requested file
+    this.getDirectory(basePath, function (err, dir) {
+      if (err) {
+        callback(err, null);
+      } else {
+        doGet(dir);
+      }
+    });
+  }
+};
+
+
+/**
+ * Request access to the file system.
+ * This is called only after quota is granted.
+ * @param {Number}       bytes
+ * @param {Function}     success
+ * @param {Function}     fail
+ */
+function requestFileSystem(bytes, success, fail) {
+  // These are in order of preference due to some being deprecated
+  if (window.navigator.webkitRequestFileSystem) {
+    window.navigator.webkitRequestFileSystem(bytes, success, fail);
+  } else if (window.requestFileSystem) {
+    window.requestFileSystem(
+      window.LocalFileSystem.PERSISTENT,
+      bytes,
+      success,
+      fail
+    );
+  } else if (window.webkitRequestFileSystem) {
+    window.webkitRequestFileSystem(
+      window.PERSISTENT_FLAG,
+      bytes,
+      success,
+      fail
+    );
+  } else {
+    fail('NO_SUPPORT');
+  }
+}
+
+
+/**
+ * Request a quota from the FileSystem.
+ * @param {Number}     bytes
+ * @param {Function}   callback
+ */
+function requestQuota(quota, callback) {
+  // Allow user overide the default quota
+  quota = quota || DEFAULT_QUOTA;
+
+  function success(bytes) {
+    callback(null, bytes);
+  }
+
+  function fail(err) {
+    callback(err, null);
+  }
+
+  // These are in order of preference due to some being deprecated
+  if (navigator.webkitPersistentStorage &&
+      navigator.webkitPersistentStorage.requestQuota) {
+    navigator.webkitPersistentStorage.requestQuota(quota, success, fail);
+  } else if (window.webkitStorageInfo &&
+      window.webkitStorageInfo.requestQuota) {
+    window.webkitStorageInfo.requestQuota(
+      window.PERSISTENT,
+      quota,
+      success,
+      fail
+    );
+  } else if (window.requestFileSystem) {
+    // PhoneGap apps should request a 0 quota
+    if (utils.isPhoneGap() === true) {
+      quota = 0;
+    }
+
+    success(quota);
+  } else {
+    fail('NO_SUPPORT');
+  }
+}
+
+},{"./utils":19,"path":13}],19:[function(_dereq_,module,exports){
+'use strict';
+
+/**
+ * Detect is the device a mobile device.
+ * @return {Boolean}
+ */
+exports.isMobile = function() {
+  var ua = window.navigator.userAgent;
+  return (ua.match(/Android|iPad|iPhone|iPod|Windows Phone/) !== null);
+};
+
+
+/**
+ * Determine if this is a PhoneGap application.
+ * @return {Boolean}
+ */
+exports.isPhoneGap = function() {
+  // TODO: Improve this...
+  var proto = window.location.protocol;
+  return (this.isMobile() && proto.indexOf('file') !== -1);
+};
+
+
+/**
+ * Determine if FileSystem is supported.
+ * @return {Boolean}
+ */
+exports.supportsFileSystem = function() {
+  if (this.isPhoneGap() === true) {
+    return true;
+  }
+
+  // TODO: Test this works, Opera (WebKit) and Chrome
+  return window.navigator.userAgent.match(/Chrome|Opera/);
+};
+
+
+/**
+ * Wrap a callback for use as a success callback.
+ * @param    {Function} callback
+ * @return   {Function}
+ */
+exports.wrapSuccess = function(callback) {
+  return function() {
+    var args = [null].concat(Array.prototype.slice.call(arguments));
+
+    callback.apply(callback, args);
+  };
+};
+
+
+/**
+ * Wrap a callback for use as a failure callback.
+ * @param    {Function} callback
+ * @return   {Function}
+ */
+exports.wrapFail = function(callback) {
+  return function() {
+    var args = Array.prototype.slice.call(arguments)
+      , e = args[0];
+
+    callback.apply(callback, [e, null]);
+  };
+};
+
+
+/**
+ * Check is provided path a directory.
+ * @param  {String} path
+ * @return {Boolean}
+ */
+exports.isDirectory = function(path) {
+  return (path.lastIndexOf('/') === (path.length - 1));
+};
+
+},{}],20:[function(_dereq_,module,exports){
 (function (global){
 /**
  * @license
@@ -8137,7 +10038,7 @@ function hasOwnProperty(obj, prop) {
 }.call(this));
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],15:[function(_dereq_,module,exports){
+},{}],21:[function(_dereq_,module,exports){
 (function (process){
 // Determines wether actions should be deferred for processing
 exports.defer = false;
@@ -8196,6 +10097,6 @@ exports.parse = function (/*json, reviver, callback*/) {
   });
 };
 }).call(this,_dereq_("FWaASH"))
-},{"FWaASH":11}]},{},[5])
+},{"FWaASH":14}]},{},[5])
 (5)
 });
