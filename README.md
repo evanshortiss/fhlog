@@ -71,7 +71,7 @@ If we run the above example the following output is generated.
 ```
 
 ## Uploading Logs to a Server
-This feature is not complete and or tested yet, so be mindful of that. 
+This feature is not thoroughly tested yet, so be mindful of that. 
 Currently it will only work on Chrome, Opera and Cordova applications that 
 support the FileSystem API.
 
@@ -108,11 +108,6 @@ Logger.getLogger('Stats', {
 
 
 ```
-
-This tells Logger to store and upload logs associated with this logger. Logs 
-are stored in window.localStorage (DOM Storage). Once logs are uploaded they 
-are deleted from localStorage. Indexing is used to ensure parsing logs for 
-upload is as performant as possible as localStorage is blocking for I/O.
 
 ## API
 
