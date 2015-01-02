@@ -23,4 +23,10 @@ describe('LoggerFactory', function () {
     });
   });
 
+  describe('#getVersion', function () {
+    it('Should get the semver version tag in package.json', function () {
+      assert(typeof LoggerFactory.getVersion(), 'string');
+    });
+  });
+
 });

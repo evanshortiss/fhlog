@@ -13,13 +13,13 @@ default: format
 
 # Run tests, then build the bundle
 build:format
-	$(browserify) -s fhlog -e ./lib/LoggerFactory.js -o ./dist/fhlog.js
+	$(browserify) -s fhlog -t brfs -e ./lib/LoggerFactory.js -o ./dist/fhlog.js
 	@echo "Build succeeded!\n"
 
 # Test files for formatting and errors, then run tests
 test:build
-	$(mocha) -R spec ./test/*.js
-	$(browserify) -e ./test/index.js -o ./test/browser/bundle.js
+	$(mocha) -R spec ./test/*.js -t 10000
+	$(browserify) -e ./test/index.js -t brfs -o ./test/browser/bundle.js
 	$(karma) start
 
 # Test file formatting and for errors

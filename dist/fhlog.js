@@ -13,6 +13,10 @@ exports.red = function (str) {
   return str;
 };
 
+exports.magenta = function (str) {
+  return str;
+};
+
 exports.green = function (str) {
   return str;
 };
@@ -83,6 +87,9 @@ function Log (opts, args) {
     , prefix = ''
     , name = opts.name;
 
+  // Set text to be just the text user supplied
+  this.text = util.format.apply(util, args);
+
   // Build log prefix
   prefix = util.format('%s %s %s: ', new Date(ts).toJSON(), lvlStr, name);
 
@@ -91,8 +98,10 @@ function Log (opts, args) {
     args[0] = prefix + args[0];
   }
 
+  // Set text to be just the text user supplied
+  this.formattedText = util.format.apply(util, args);
+
   // Format the string so we can save it and output it correctly
-  this.text = util.format.apply(util, args);
   this.ts = ts;
   this.level = opts.level;
   this.name = name;
@@ -107,10 +116,10 @@ module.exports = Log;
  */
 Log.prototype.print = function (print) {
   if (print) {
-    transport.log(this.level, this.text);
+    transport.log(this.level, this.formattedText);
   }
 
-  return this.text;
+  return this.formattedText;
 };
 
 
@@ -137,7 +146,7 @@ Log.prototype.toJSON = function () {
   };
 };
 
-},{"./Levels":2,"./Meta":6,"./transport":10,"colors/safe":1,"lodash":20,"util":16}],4:[function(_dereq_,module,exports){
+},{"./Levels":2,"./Meta":6,"./transport":12,"colors/safe":1,"lodash":22,"util":18}],4:[function(_dereq_,module,exports){
 'use strict';
 
 var Log = _dereq_('./Log')
@@ -269,6 +278,34 @@ Logger.prototype.err = function () {
 
 /**
  * @public
+ * Shim for the info Logger function.
+ */
+Logger.prototype.i = Logger.prototype.info;
+
+
+/**
+ * @public
+ * Shim for the error Logger function.
+ */
+Logger.prototype.e = Logger.prototype.e;
+
+
+/**
+ * @public
+ * Shim for the warn Logger function.
+ */
+Logger.prototype.w = Logger.prototype.warn;
+
+
+/**
+ * @public
+ * Shim for the debug Logger function.
+ */
+Logger.prototype.d = Logger.prototype.debug;
+
+
+/**
+ * @public
  * Log a message at 'ERROR' level
  * Log a string and return the string value of the provided log args.
  * This operates in the same manner as console.error
@@ -317,17 +354,27 @@ Logger.prototype.setName = function(name) {
   this._name = name;
 };
 
-},{"./Levels":2,"./Log":3,"./persistence":8}],5:[function(_dereq_,module,exports){
+},{"./Levels":2,"./Log":3,"./persistence":10}],5:[function(_dereq_,module,exports){
 'use strict';
 
 var Logger = _dereq_('./Logger')
   , LEVELS = _dereq_('./Levels')
   , persistence = _dereq_('./Persistence')
-  , meta = _dereq_('./Meta');
+  , meta = _dereq_('./Meta')
+  , pkg = _dereq_('./Package');
 
 
 // Map of loggers created. Same name loggers exist only once.
 var loggers = {};
+
+
+/**
+ * Get the current running version of this module.
+ * @return {String} The sermver version tag.
+ */
+exports.getVersion = function () {
+  return pkg.get('version');
+};
 
 
 /**
@@ -336,6 +383,14 @@ var loggers = {};
  * @type {Object}
  */
 exports.LEVELS = LEVELS;
+
+
+/**
+ * @public
+ * Metadata interface
+ * @type {Object}
+ */
+exports.meta = meta;
 
 
 /**
@@ -371,7 +426,7 @@ exports.init = function (opts, callback) {
  * @param   {Object}    [opts]
  * @returns {Logger}
  */
-exports.getLogger = function (name, opts) {
+exports.getLogger = exports.get = function (name, opts) {
   name = name || '';
 
   if (loggers[name]) {
@@ -383,12 +438,20 @@ exports.getLogger = function (name, opts) {
   }
 };
 
-},{"./Levels":2,"./Logger":4,"./Meta":6,"./Persistence":7}],6:[function(_dereq_,module,exports){
+},{"./Levels":2,"./Logger":4,"./Meta":6,"./Package":7,"./Persistence":8}],6:[function(_dereq_,module,exports){
 'use strict';
 
 var meta = {};
 
+/**
+ * Checks that metadata supplied is the correct format.
+ * @param  {Object} m
+ */
 function verifyMeta (m) {
+  if (typeof m !== 'object') {
+    throw new Error('Meta for logs must be a serialisable object.');
+  }
+
   try {
     JSON.stringify(m);
   } catch (e) {
@@ -396,17 +459,49 @@ function verifyMeta (m) {
   }
 }
 
-function get () {
-  return meta;
-}
 
-function set (m) {
+/**
+ * Replace the entire meta object with an object.
+ * @param  {Object} m
+ */
+function replace (m) {
   verifyMeta(m);
 
   meta = m;
 }
 
+
+/**
+ * Remove a key from the metadata.
+ * @param  {String} key Key to remove from meta object
+ * @return {Bool}       Success or failure flag
+ */
+function remove(key) {
+  return delete meta[key];
+}
+
+
+/**
+ * Get the stored metadata
+ * @return {Object}
+ */
+function get () {
+  return meta;
+}
+
+
+/**
+ * Set the stored metadata.
+ * This must be a serialisable JSON object
+ * @param {Object} m
+ */
+function set (key, val) {
+  meta[key] = val;
+}
+
 module.exports = {
+  replace: replace,
+  remove: remove,
   get: get,
   set: set
 };
@@ -414,11 +509,27 @@ module.exports = {
 },{}],7:[function(_dereq_,module,exports){
 'use strict';
 
+// This is replaced using the brfs transform
+
+
+var pkg = "{\n  \"name\": \"fhlog\",\n  \"version\": \"0.1.0\",\n  \"description\": \"Simple and flexible logger for the browser and Node.js\",\n  \"scripts\": {\n    \"test\": \"echo \\\"Error: no test specified\\\" && exit 1\"\n  },\n  \"main\": \"./lib/LoggerFactory.js\",\n  \"author\": \"Evan Shortiss\",\n  \"license\": \"MIT\",\n  \"devDependencies\": {\n    \"browserify\": \"~4.1.8\",\n    \"mocha\": \"~1.20.1\",\n    \"lintspaces-cli\": \"0.0.3\",\n    \"jshint\": \"~2.5.2\",\n    \"linelint\": \"0.0.3\",\n    \"brfs\": \"~1.2.0\",\n    \"html5-fs\": \"0.0.1\",\n    \"karma\": \"^0.12.16\",\n    \"karma-chrome-launcher\": \"^0.1.4\",\n    \"karma-mocha\": \"^0.1.4\",\n    \"karma-mocha-reporter\": \"^0.2.7\",\n    \"karma-firefox-launcher\": \"~0.1.3\"\n  },\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"git://github.com/evanshortiss/logger.git\"\n  },\n  \"browser\": {\n    \"colors/safe\": \"./lib/BrowserColors.js\",\n    \"./lib/transport/console.js\": \"./lib/transport/console-browser.js\",\n    \"./lib/fileSystem/index.js\": \"./lib/fileSystem/browser-filesystem.js\"\n  },\n  \"testling\": {\n    \"harness\": \"mocha-bdd\",\n    \"files\": \"./test/**/*.js\",\n    \"browsers\": [\n      \"ie/8..latest\",\n      \"chrome/22..latest\",\n      \"firefox/16..latest\",\n      \"safari/4..latest\",\n      \"opera/11.0..latest\",\n      \"iphone/6..latest\",\n      \"ipad/6..latest\",\n      \"android-browser/latest\"\n    ]\n  },\n  \"dependencies\": {\n    \"safejson\": \"~1.0.0\",\n    \"colors\": \"~1.0.3\",\n    \"lodash\": \"~2.4.1\",\n    \"moment\": \"~2.8.4\",\n    \"async\": \"~0.9.0\"\n  }\n}\n";
+
+pkg = JSON.parse(pkg);
+
+exports.get = function (key) {
+  return pkg[key];
+};
+
+},{}],8:[function(_dereq_,module,exports){
+'use strict';
+
 var safejson = _dereq_('safejson')
   , async = _dereq_('async')
   , path = _dereq_('path')
-  , fs = _dereq_('html5-fs')
+  , pkg = _dereq_('./Package')
+  , fs = _dereq_('./fileSystem')
   , _ = _dereq_('lodash');
+
 
 // Priority based queue to store log file ops.
 // Writes are highest priority, we don't want to lose logs!
@@ -427,14 +538,17 @@ var opQ = async.priorityQueue(runQueueTask, 1);
 // Function that must be set to upload logs to a remote endpoint
 var uploadFn = null;
 
+// Tracks if this component has been initialisd
+var initialised = false;
+
 var LOG_DIR = './fhlogs'
   , FILE_EXT = '.txt'
   , TASK_PRIORITY = {
     WRITE: 1,
     UPLOAD: 2,
   }
-  , DEFAULT_STORAGE_QUOTA = 25 * Math.pow(3, 1024) // Max log storage is 25MB
-  , MAX_FILE_SIZE = 10 * Math.pow(2, 1024); // Max file size is 10KB
+  , DEFAULT_STORAGE_QUOTA = 25 * Math.pow(1024, 3) // Max log storage is 25MB
+  , MAX_FILE_SIZE = 10 * Math.pow(1024, 2); // Max file size is 10KB
 
 
 function runQueueTask (task, callback) {
@@ -461,6 +575,8 @@ function getOldestFilename (callback) {
   getLogFiles(function (err, files) {
     if (err) {
       callback(err, null);
+    } else if (!files || files.length === 0) {
+      return callback(null, Date.now().toString().concat(FILE_EXT));
     } else {
       var file = _.min(files, function (f) {
         // Remove extension to get just the timestamp
@@ -484,15 +600,21 @@ function getMostRecentFilename (callback) {
   getLogFiles(function (err, files) {
     if (err) {
       callback(err, null);
+    } else if (!files || files.length === 0) {
+      return callback(null, Date.now().toString().concat(FILE_EXT));
     } else {
       var file = _.max(files, function (f) {
+        var n = (f && typeof f.name === 'string') ? f.name : f;
+
         // Remove extension to get just the timestamp
-        var ts = f.name.replace(FILE_EXT, '');
+        var ts = n.replace(FILE_EXT, '');
 
         return parseInt(ts, 10);
       });
 
-      callback(null, file.name);
+      var n = (file && typeof file.name === 'string') ? file.name : file;
+
+      callback(null, n);
     }
   });
 }
@@ -507,6 +629,7 @@ function getRequiredFilename (name, callback) {
   var filepath = path.join(LOG_DIR, name);
 
   function getStats () {
+
     fs.stat(filepath, function (err, stats) {
       if (err) {
         callback(err, null);
@@ -519,14 +642,11 @@ function getRequiredFilename (name, callback) {
   }
 
   function createFile () {
-    var newName = Date.now().toString().concat(FILE_EXT);
-    filepath = path.join(LOG_DIR, newName);
-
     fs.writeFile(filepath, '[]', function (err) {
       if (err) {
         callback(err, null);
       } else {
-        callback(null, newName);
+        callback(null, name);
       }
     });
   }
@@ -547,10 +667,10 @@ function getRequiredFilename (name, callback) {
  * @param  {Log} log [description]
  */
 function getWriteFunction(log) {
-  return function writeLogFile (name, cb) {
+  return function writeLogFile (name, qcb) {
     var dir = path.join(LOG_DIR, name);
 
-    function readFile (name, cb) {
+    function readFile (cb) {
       fs.readFile(dir, cb);
     }
 
@@ -569,7 +689,7 @@ function getWriteFunction(log) {
       updateLogs,
       safejson.stringify,
       writeFile
-    ], cb);
+    ], qcb);
   };
 }
 
@@ -579,8 +699,23 @@ function getWriteFunction(log) {
  * @param  {String}   name
  * @param  {Function} callback
  */
-function readLogFile(name, callback) {
-  fs.readFile(path.join(LOG_DIR, name), callback);
+function getLogsObject (name, callback) {
+  fs.readFile(path.join(LOG_DIR, name), function (err, data) {
+    if (err) {
+      return callback(err, null);
+    }
+
+    safejson.parse(data, function (err, logArray) {
+      if (err) {
+        return callback(err, null);
+      }
+
+      callback(null, {
+        fhlogVersion: pkg.get('version'),
+        logs: logArray
+      });
+    });
+  });
 }
 
 
@@ -595,66 +730,102 @@ function deleteFile(name, callback) {
 
 
 /**
- * [init description]
- * @param  {[type]}   opts     [description]
- * @param  {Function} callback [description]
- * @return {[type]}            [description]
+ * Initialise this component for uploads.
+ * @param  {Object}   opts
+ * @param  {Function} callback
  */
 exports.init = function (opts, callback) {
   var quota = opts.stroageQuota || DEFAULT_STORAGE_QUOTA;
   uploadFn = opts.uploadFn || null;
 
-  fs.init(quota, callback);
+  function afterInit (err) {
+    if (err) {
+      return callback(err, null);
+    }
+
+    initialised = true;
+
+    fs.exists(LOG_DIR, function (exists) {
+      if (exists) {
+        return callback(null, null);
+      }
+
+      fs.mkdir(LOG_DIR, callback);
+    });
+  }
+
+  if (fs.init) {
+    fs.init(quota, afterInit);
+  } else {
+    afterInit();
+  }
 };
 
 
 /**
  * Write a log to storage for uploading later.
  * @param  {Log} log
+ * @param  {Function} callback
  */
-exports.writeLog = function (log) {
+exports.writeLog = function (log, callback) {
+  if (!initialised) {
+    if (callback) {
+      return callback('Cannot write log to storage. The file system never ' +
+        ' initialised.', null);
+    } else {
+      return console.log('fhlog: Cannot write logs as FileSystem' +
+        ' wasn\'t initialised');
+    }
+  }
 
   // TODO: Idea. Maybe queue Log objects and do this write on an interval?
   // Basically write in batches every second to avoid to many I/O ops
 
-  function writeOp (callback) {
+  function writeOp (qcb) {
     async.waterfall([
       getMostRecentFilename,
       getRequiredFilename,
       getWriteFunction(log)
-    ], callback);
+    ], qcb);
   }
 
   // Queue this operation with the highest priority
   opQ.push({
     fn: writeOp
-  }, TASK_PRIORITY.WRITE);
+  }, TASK_PRIORITY.WRITE, callback);
 };
 
 
 /**
  * Upload the stored logs, using a FIFO strategy.
+ * @param {Function} callback
  */
-exports.uploadLogs = function () {
+exports.uploadLogs = function (callback) {
 
-  function uploadOp (callback) {
+  function uploadOp (qcb) {
     async.waterfall([
       getOldestFilename,
-      readLogFile,
+      getLogsObject,
+      safejson.stringify,
       uploadFn,
       getOldestFilename,
       deleteFile
-    ], callback);
+    ], qcb);
   }
 
   opQ.push({
     fn: uploadOp
-  }, TASK_PRIORITY.UPLOAD);
+  }, TASK_PRIORITY.UPLOAD, callback);
 };
 
-},{"async":11,"html5-fs":17,"lodash":20,"path":13,"safejson":21}],8:[function(_dereq_,module,exports){
-module.exports=_dereq_(7)
-},{"async":11,"html5-fs":17,"lodash":20,"path":13,"safejson":21}],9:[function(_dereq_,module,exports){
+},{"./Package":7,"./fileSystem":9,"async":13,"lodash":22,"path":15,"safejson":23}],9:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = _dereq_('html5-fs');
+
+},{"html5-fs":19}],10:[function(_dereq_,module,exports){
+module.exports=_dereq_(8)
+},{"./Package":7,"./fileSystem":9,"async":13,"lodash":22,"path":15,"safejson":23}],11:[function(_dereq_,module,exports){
 'use strict';
 
 var LEVELS = _dereq_('../Levels');
@@ -689,7 +860,7 @@ module.exports = function (level, str) {
   logFn.call(console, str);
 };
 
-},{"../Levels":2}],10:[function(_dereq_,module,exports){
+},{"../Levels":2}],12:[function(_dereq_,module,exports){
 'use strict';
 
 
@@ -712,7 +883,7 @@ exports.log = function (level, str) {
   }
 };
 
-},{"./console":9}],11:[function(_dereq_,module,exports){
+},{"./console":11}],13:[function(_dereq_,module,exports){
 (function (process){
 /*!
  * async
@@ -1839,7 +2010,7 @@ exports.log = function (level, str) {
 }());
 
 }).call(this,_dereq_("FWaASH"))
-},{"FWaASH":14}],12:[function(_dereq_,module,exports){
+},{"FWaASH":16}],14:[function(_dereq_,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -1864,7 +2035,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],13:[function(_dereq_,module,exports){
+},{}],15:[function(_dereq_,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -2092,7 +2263,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this,_dereq_("FWaASH"))
-},{"FWaASH":14}],14:[function(_dereq_,module,exports){
+},{"FWaASH":16}],16:[function(_dereq_,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -2157,14 +2328,14 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],15:[function(_dereq_,module,exports){
+},{}],17:[function(_dereq_,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],16:[function(_dereq_,module,exports){
+},{}],18:[function(_dereq_,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -2754,7 +2925,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,_dereq_("FWaASH"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":15,"FWaASH":14,"inherits":12}],17:[function(_dereq_,module,exports){
+},{"./support/isBuffer":17,"FWaASH":16,"inherits":14}],19:[function(_dereq_,module,exports){
 'use strict';
 
 var utils = _dereq_('./utils')
@@ -2950,7 +3121,7 @@ exports.init = function(bytes, callback) {
   });
 };
 
-},{"./fileSystem":18,"./utils":19,"path":13}],18:[function(_dereq_,module,exports){
+},{"./fileSystem":20,"./utils":21,"path":15}],20:[function(_dereq_,module,exports){
 'use strict';
 
 var utils = _dereq_('./utils')
@@ -3173,7 +3344,7 @@ function requestQuota(quota, callback) {
   }
 }
 
-},{"./utils":19,"path":13}],19:[function(_dereq_,module,exports){
+},{"./utils":21,"path":15}],21:[function(_dereq_,module,exports){
 'use strict';
 
 /**
@@ -3249,7 +3420,7 @@ exports.isDirectory = function(path) {
   return (path.lastIndexOf('/') === (path.length - 1));
 };
 
-},{}],20:[function(_dereq_,module,exports){
+},{}],22:[function(_dereq_,module,exports){
 (function (global){
 /**
  * @license
@@ -10038,7 +10209,7 @@ exports.isDirectory = function(path) {
 }.call(this));
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],21:[function(_dereq_,module,exports){
+},{}],23:[function(_dereq_,module,exports){
 (function (process){
 // Determines wether actions should be deferred for processing
 exports.defer = false;
@@ -10097,6 +10268,6 @@ exports.parse = function (/*json, reviver, callback*/) {
   });
 };
 }).call(this,_dereq_("FWaASH"))
-},{"FWaASH":14}]},{},[5])
+},{"FWaASH":16}]},{},[5])
 (5)
 });

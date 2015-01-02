@@ -4,3 +4,4 @@
 require('./Logger.js');
 require('./Log.js');
 require('./LoggerFactory.js');
+require('./Persistence.js');

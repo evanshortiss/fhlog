@@ -1,6 +1,6 @@
 {
   "name": "fhlog",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "description": "Simple and flexible logger for the browser and Node.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -14,6 +14,8 @@
     "lintspaces-cli": "0.0.3",
     "jshint": "~2.5.2",
     "linelint": "0.0.3",
+    "brfs": "~1.2.0",
+    "html5-fs": "0.0.1",
     "karma": "^0.12.16",
     "karma-chrome-launcher": "^0.1.4",
     "karma-mocha": "^0.1.4",
@@ -26,7 +28,8 @@
   },
   "browser": {
     "colors/safe": "./lib/BrowserColors.js",
-    "./lib/transport/console.js": "./lib/transport/console-browser.js"
+    "./lib/transport/console.js": "./lib/transport/console-browser.js",
+    "./lib/fileSystem/index.js": "./lib/fileSystem/browser-filesystem.js"
   },
   "testling": {
     "harness": "mocha-bdd",
@@ -46,7 +49,6 @@
     "safejson": "~1.0.0",
     "colors": "~1.0.3",
     "lodash": "~2.4.1",
-    "html5-fs": "0.0.1",
     "moment": "~2.8.4",
     "async": "~0.9.0"
   }
