@@ -361,7 +361,8 @@ var Logger = _dereq_('./Logger')
   , LEVELS = _dereq_('./Levels')
   , persistence = _dereq_('./Persistence')
   , meta = _dereq_('./Meta')
-  , pkg = _dereq_('./Package');
+  , pkg = _dereq_('./Package')
+  , _ = _dereq_('lodash');
 
 
 // Map of loggers created. Same name loggers exist only once.
@@ -438,7 +439,16 @@ exports.getLogger = exports.get = function (name, opts) {
   }
 };
 
-},{"./Levels":2,"./Logger":4,"./Meta":6,"./Package":7,"./Persistence":8}],6:[function(_dereq_,module,exports){
+// Register as an Angular module if possible
+if (typeof window !== 'undefined' && window.angular && window.angular.module) {
+  angular.module('fhlog', [])
+    .service('fhlog', function () {
+      // Return the service with the properties of the LoggerFactory appended
+      return _.assign(this, exports);
+    });
+}
+
+},{"./Levels":2,"./Logger":4,"./Meta":6,"./Package":7,"./Persistence":8,"lodash":22}],6:[function(_dereq_,module,exports){
 'use strict';
 
 var meta = {};

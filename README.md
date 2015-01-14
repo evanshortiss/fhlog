@@ -5,7 +5,8 @@ Another loggging library!? Yes. But this one is different. It's written with
 both the client and server in mind. It has the same API when runnning on the 
 client or server (Node.js), supports being _required_ in Node/Browserified 
 apps, and also can be installed using Bower; great news if you want to use the 
-same log library on both the client and server!
+same log library on both the client and server! It's also possible to use with 
+AngularJS' dependency injection.
 
 ## Sample Code
 ```javascript
@@ -68,6 +69,25 @@ If we run the above example the following output is generated.
 2014-10-01T17:27:57.198Z ERR Stats: I'll log at ERROR level!
 2014-10-01T17:27:57.198Z INF New Name!: My log level is 0
 
+```
+
+## Using with Angular
+Works just like it usually does, but can be injected as a service instance into 
+other components. Just add it as a dependency of your module.
+
+```javascript
+angular.module('MyApp', ['fhlog']);
+
+angular.module('MyApp').service('Heroes', function (fhlog) {
+	var log = fhlog.getLogger('Heroes Service');
+
+	var heroes = ['Batman', 'Spiderman', 'Thor'];
+
+	this.get = function () {
+		log.d('Getting heroes!');
+		return heroes;
+	};
+})
 ```
 
 ## Uploading Logs to a Server
