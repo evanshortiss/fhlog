@@ -10,7 +10,6 @@
     "logger",
     "fh"
   ],
-  "author": "Evan Shortiss",
   "license": "MIT",
   "ignore": [
     "**/.*",
@@ -24,7 +23,7 @@
     "tests"
   ],
   "authors": [
-    "Evan Shortiss <evanshortiss@gmail.com>"
+    "Evan Shortiss"
   ],
   "moduleType": [
     "amd",
