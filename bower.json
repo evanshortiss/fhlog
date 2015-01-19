@@ -4,18 +4,31 @@
   "version": "0.1.0",
   "description": "Simple and flexible logger for the browser and Node.js",
   "homepage": "https://github.com/evanshortiss/fhlog",
-  "keywords": ["fhlog", "log", "logger", "fh"],
-  "authors": [
-    "Evan Shortiss"
+  "keywords": [
+    "fhlog",
+    "log",
+    "logger",
+    "fh"
   ],
+  "author": "Evan Shortiss",
   "license": "MIT",
   "ignore": [
     "**/.*",
+    "./lib",
+    "Makefile",
+    "./example",
+    "package.json",
     "node_modules",
     "bower_components",
     "test",
-    "lib",
-    "Makefile"
-    "package.json"
+    "tests"
+  ],
+  "authors": [
+    "Evan Shortiss <evanshortiss@gmail.com>"
+  ],
+  "moduleType": [
+    "amd",
+    "globals",
+    "node"
   ]
 }
