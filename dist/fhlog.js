@@ -146,11 +146,11 @@ Log.prototype.toJSON = function () {
   };
 };
 
-},{"./Levels":2,"./Meta":6,"./transport":12,"colors/safe":1,"lodash":22,"util":18}],4:[function(_dereq_,module,exports){
+},{"./Levels":2,"./Meta":6,"./transport":11,"colors/safe":1,"lodash":21,"util":17}],4:[function(_dereq_,module,exports){
 'use strict';
 
 var Log = _dereq_('./Log')
-  , persistence = _dereq_('./persistence')
+  , persistence = _dereq_('./Persistence')
   , LEVELS = _dereq_('./Levels');
 
 /**
@@ -287,7 +287,7 @@ Logger.prototype.i = Logger.prototype.info;
  * @public
  * Shim for the error Logger function.
  */
-Logger.prototype.e = Logger.prototype.e;
+Logger.prototype.e = Logger.prototype.error;
 
 
 /**
@@ -354,7 +354,7 @@ Logger.prototype.setName = function(name) {
   this._name = name;
 };
 
-},{"./Levels":2,"./Log":3,"./persistence":10}],5:[function(_dereq_,module,exports){
+},{"./Levels":2,"./Log":3,"./Persistence":8}],5:[function(_dereq_,module,exports){
 'use strict';
 
 var Logger = _dereq_('./Logger')
@@ -448,7 +448,7 @@ if (typeof window !== 'undefined' && window.angular && window.angular.module) {
     });
 }
 
-},{"./Levels":2,"./Logger":4,"./Meta":6,"./Package":7,"./Persistence":8,"lodash":22}],6:[function(_dereq_,module,exports){
+},{"./Levels":2,"./Logger":4,"./Meta":6,"./Package":7,"./Persistence":8,"lodash":21}],6:[function(_dereq_,module,exports){
 'use strict';
 
 var meta = {};
@@ -522,7 +522,7 @@ module.exports = {
 // This is replaced using the brfs transform
 
 
-var pkg = "{\n  \"name\": \"fhlog\",\n  \"version\": \"0.1.1\",\n  \"description\": \"Simple and flexible logger for the browser and Node.js\",\n  \"scripts\": {\n    \"test\": \"echo \\\"Error: no test specified\\\" && exit 1\"\n  },\n  \"main\": \"./lib/LoggerFactory.js\",\n  \"author\": \"Evan Shortiss\",\n  \"license\": \"MIT\",\n  \"devDependencies\": {\n    \"browserify\": \"~4.1.8\",\n    \"mocha\": \"~1.20.1\",\n    \"lintspaces-cli\": \"0.0.3\",\n    \"jshint\": \"~2.5.2\",\n    \"linelint\": \"0.0.3\",\n    \"brfs\": \"~1.2.0\",\n    \"karma\": \"^0.12.16\",\n    \"karma-chrome-launcher\": \"^0.1.4\",\n    \"karma-mocha\": \"^0.1.4\",\n    \"karma-mocha-reporter\": \"^0.2.7\",\n    \"karma-firefox-launcher\": \"~0.1.3\"\n  },\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"git://github.com/evanshortiss/logger.git\"\n  },\n  \"browser\": {\n    \"colors/safe\": \"./lib/BrowserColors.js\",\n    \"./lib/transport/console.js\": \"./lib/transport/console-browser.js\",\n    \"./lib/fileSystem/index.js\": \"./lib/fileSystem/browser-filesystem.js\"\n  },\n  \"testling\": {\n    \"harness\": \"mocha-bdd\",\n    \"files\": \"./test/**/*.js\",\n    \"browsers\": [\n      \"ie/8..latest\",\n      \"chrome/22..latest\",\n      \"firefox/16..latest\",\n      \"safari/4..latest\",\n      \"opera/11.0..latest\",\n      \"iphone/6..latest\",\n      \"ipad/6..latest\",\n      \"android-browser/latest\"\n    ]\n  },\n  \"dependencies\": {\n    \"safejson\": \"~1.0.0\",\n    \"colors\": \"~1.0.3\",\n    \"lodash\": \"~2.4.1\",\n    \"moment\": \"~2.8.4\",\n    \"async\": \"~0.9.0\",\n    \"html5-fs\": \"0.0.1\"\n  }\n}\n";
+var pkg = "{\n  \"name\": \"fhlog\",\n  \"version\": \"0.1.3\",\n  \"description\": \"Simple and flexible logger for the browser and Node.js\",\n  \"scripts\": {\n    \"test\": \"echo \\\"Error: no test specified\\\" && exit 1\"\n  },\n  \"main\": \"./lib/LoggerFactory.js\",\n  \"author\": \"Evan Shortiss\",\n  \"license\": \"MIT\",\n  \"devDependencies\": {\n    \"browserify\": \"~4.1.8\",\n    \"mocha\": \"~1.20.1\",\n    \"lintspaces-cli\": \"0.0.3\",\n    \"jshint\": \"~2.5.2\",\n    \"linelint\": \"0.0.3\",\n    \"brfs\": \"~1.2.0\",\n    \"karma\": \"^0.12.16\",\n    \"karma-chrome-launcher\": \"^0.1.4\",\n    \"karma-mocha\": \"^0.1.4\",\n    \"karma-mocha-reporter\": \"^0.2.7\",\n    \"karma-firefox-launcher\": \"~0.1.3\"\n  },\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"git://github.com/evanshortiss/logger.git\"\n  },\n  \"browser\": {\n    \"colors/safe\": \"./lib/BrowserColors.js\",\n    \"./lib/transport/console.js\": \"./lib/transport/console-browser.js\",\n    \"./lib/fileSystem/index.js\": \"./lib/fileSystem/browser-filesystem.js\"\n  },\n  \"testling\": {\n    \"harness\": \"mocha-bdd\",\n    \"files\": \"./test/**/*.js\",\n    \"browsers\": [\n      \"ie/8..latest\",\n      \"chrome/22..latest\",\n      \"firefox/16..latest\",\n      \"safari/4..latest\",\n      \"opera/11.0..latest\",\n      \"iphone/6..latest\",\n      \"ipad/6..latest\",\n      \"android-browser/latest\"\n    ]\n  },\n  \"dependencies\": {\n    \"safejson\": \"~1.0.0\",\n    \"colors\": \"~1.0.3\",\n    \"lodash\": \"~2.4.1\",\n    \"moment\": \"~2.8.4\",\n    \"async\": \"~0.9.0\",\n    \"html5-fs\": \"0.0.1\"\n  }\n}\n";
 
 pkg = JSON.parse(pkg);
 
@@ -828,14 +828,12 @@ exports.uploadLogs = function (callback) {
   }, TASK_PRIORITY.UPLOAD, callback);
 };
 
-},{"./Package":7,"./fileSystem":9,"async":13,"lodash":22,"path":15,"safejson":23}],9:[function(_dereq_,module,exports){
+},{"./Package":7,"./fileSystem":9,"async":12,"lodash":21,"path":14,"safejson":22}],9:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = _dereq_('html5-fs');
 
-},{"html5-fs":19}],10:[function(_dereq_,module,exports){
-module.exports=_dereq_(8)
-},{"./Package":7,"./fileSystem":9,"async":13,"lodash":22,"path":15,"safejson":23}],11:[function(_dereq_,module,exports){
+},{"html5-fs":18}],10:[function(_dereq_,module,exports){
 'use strict';
 
 var LEVELS = _dereq_('../Levels');
@@ -870,7 +868,7 @@ module.exports = function (level, str) {
   logFn.call(console, str);
 };
 
-},{"../Levels":2}],12:[function(_dereq_,module,exports){
+},{"../Levels":2}],11:[function(_dereq_,module,exports){
 'use strict';
 
 
@@ -893,7 +891,7 @@ exports.log = function (level, str) {
   }
 };
 
-},{"./console":11}],13:[function(_dereq_,module,exports){
+},{"./console":10}],12:[function(_dereq_,module,exports){
 (function (process){
 /*!
  * async
@@ -2020,7 +2018,7 @@ exports.log = function (level, str) {
 }());
 
 }).call(this,_dereq_("FWaASH"))
-},{"FWaASH":16}],14:[function(_dereq_,module,exports){
+},{"FWaASH":15}],13:[function(_dereq_,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -2045,7 +2043,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],15:[function(_dereq_,module,exports){
+},{}],14:[function(_dereq_,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -2273,7 +2271,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this,_dereq_("FWaASH"))
-},{"FWaASH":16}],16:[function(_dereq_,module,exports){
+},{"FWaASH":15}],15:[function(_dereq_,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -2338,14 +2336,14 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],17:[function(_dereq_,module,exports){
+},{}],16:[function(_dereq_,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],18:[function(_dereq_,module,exports){
+},{}],17:[function(_dereq_,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -2935,7 +2933,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,_dereq_("FWaASH"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":17,"FWaASH":16,"inherits":14}],19:[function(_dereq_,module,exports){
+},{"./support/isBuffer":16,"FWaASH":15,"inherits":13}],18:[function(_dereq_,module,exports){
 'use strict';
 
 var utils = _dereq_('./utils')
@@ -3131,7 +3129,7 @@ exports.init = function(bytes, callback) {
   });
 };
 
-},{"./fileSystem":20,"./utils":21,"path":15}],20:[function(_dereq_,module,exports){
+},{"./fileSystem":19,"./utils":20,"path":14}],19:[function(_dereq_,module,exports){
 'use strict';
 
 var utils = _dereq_('./utils')
@@ -3354,7 +3352,7 @@ function requestQuota(quota, callback) {
   }
 }
 
-},{"./utils":21,"path":15}],21:[function(_dereq_,module,exports){
+},{"./utils":20,"path":14}],20:[function(_dereq_,module,exports){
 'use strict';
 
 /**
@@ -3430,7 +3428,7 @@ exports.isDirectory = function(path) {
   return (path.lastIndexOf('/') === (path.length - 1));
 };
 
-},{}],22:[function(_dereq_,module,exports){
+},{}],21:[function(_dereq_,module,exports){
 (function (global){
 /**
  * @license
@@ -10219,7 +10217,7 @@ exports.isDirectory = function(path) {
 }.call(this));
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],23:[function(_dereq_,module,exports){
+},{}],22:[function(_dereq_,module,exports){
 (function (process){
 // Determines wether actions should be deferred for processing
 exports.defer = false;
@@ -10278,6 +10276,6 @@ exports.parse = function (/*json, reviver, callback*/) {
   });
 };
 }).call(this,_dereq_("FWaASH"))
-},{"FWaASH":16}]},{},[5])
+},{"FWaASH":15}]},{},[5])
 (5)
 });
