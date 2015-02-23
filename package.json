@@ -1,6 +1,6 @@
 {
   "name": "fhlog",
-  "version": "0.11.6",
+  "version": "0.11.0",
   "description": "Simple and flexible logger for the browser and Node.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
