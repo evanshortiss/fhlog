@@ -135,8 +135,15 @@ Logger.getLogger('Stats', {
 This is the primary interface exposed when you _require_ this module, or on the 
 _window.fhlog_ object if you're not using Browserify or Node.js.
 
-##### getVersion
-Get the current version of _fhlog_ being used.
+##### setDefault(key, val)
+Set a default value to use for a paramter when getting a logger. For example 
+you might want all loggers to not use colours so you could do this.
+
+```javascript
+var fhlog = require('fhlog');
+
+fhlog.setDefault('colourise', false);
+```
 
 ##### LEVELS
 Exposes a way to set log levels. Contains the following keys for use as shown 
