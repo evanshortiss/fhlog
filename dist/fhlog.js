@@ -287,7 +287,7 @@ Logger.prototype.i = Logger.prototype.info;
  * @public
  * Shim for the error Logger function.
  */
-Logger.prototype.e = Logger.prototype.error;
+Logger.prototype.e = Logger.prototype.err;
 
 
 /**
@@ -363,9 +363,8 @@ var Logger = _dereq_('./Logger')
   , meta = _dereq_('./Meta')
   , _ = _dereq_('lodash');
 
-
-// Map of loggers created. Same name loggers exist only once.
-var loggers = {};
+var loggers = {}    // Loggers created. Same name loggers exist only once.
+  , defaults = {};  // Defaults to apply to each logger at creation
 
 
 /**
@@ -411,6 +410,36 @@ exports.init = function (opts, callback) {
 
 
 /**
+ * Set a default property to apply to all loggers
+ * @param {String} name The property to create a default for
+ * @param {String} val  The default value
+ */
+exports.setDefault = function (name, val) {
+  defaults[name] = val;
+};
+
+
+/**
+ * Forces all loggers into silent mode.
+ */
+exports.silenceIsGolden = exports.silenceAll = function () {
+  _.each(loggers, function (l) {
+    l.setSilent(true);
+  });
+};
+
+
+/**
+ * Forces all loggers out of silent mode.
+ */
+exports.permissionToSpeakGranted = exports.unsilenceAll = function () {
+  _.each(loggers, function (l) {
+    l.setSilent(false);
+  });
+};
+
+
+/**
  * @public
  * Get a named logger instance creating it if it doesn't already exist.
  * @param   {String}    [name]
@@ -419,11 +448,13 @@ exports.init = function (opts, callback) {
  */
 exports.getLogger = exports.get = function (name, opts) {
   name = name || '';
+  opts = opts || {};
 
   if (loggers[name]) {
     return loggers[name];
   } else {
-    loggers[name] = new Logger(name, opts);
+    // Get a logger with user opts and defaults, current opts take priority
+    loggers[name] = new Logger(name, _.assign(defaults, opts));
 
     return loggers[name];
   }
