@@ -1,7 +1,7 @@
 {
   "name": "fhlog",
   "main": "./dist/fhlog.js",
-  "version": "0.1.2",
+  "version": "0.12.1",
   "description": "Simple and flexible logger for the browser and Node.js",
   "homepage": "https://github.com/evanshortiss/fhlog",
   "keywords": [

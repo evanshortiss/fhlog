@@ -853,17 +853,17 @@ module.exports = function (level, str) {
   var logFn = null;
 
   switch (level) {
-    case LEVELS.DEBUG:
+    case LEVELS.DBG:
       logFn = console.debug || console.log;
       break;
-    case LEVELS.INFO:
+    case LEVELS.INF:
       logFn = console.info || console.log;
       break;
-    case LEVELS.WARN:
-      logFn = console.warn;
+    case LEVELS.WRN:
+      logFn = console.warn || console.log;
       break;
-    case LEVELS.ERROR:
-      logFn = console.error;
+    case LEVELS.ERR:
+      logFn = console.error || console.log;
       break;
     default:
       logFn = console.log;
