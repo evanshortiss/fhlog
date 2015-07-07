@@ -1,6 +1,9 @@
 fhlog
 ======
 
+[![build-status](https://travis-ci.org/evanshortiss/fhlog.svg?branch=develop)
+](https://travis-ci.org/evanshortiss/fhlog.svg?branch=master)
+
 Another loggging library!? Yes. But this one is different. It's written with 
 both the client and server in mind. It has the same API when runnning on the 
 client or server (Node.js), supports being _required_ in Node/Browserified 
