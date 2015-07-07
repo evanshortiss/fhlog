@@ -1,8 +1,10 @@
 fhlog
 ======
 
-[![build-status](https://travis-ci.org/evanshortiss/fhlog.svg?branch=develop)
-](https://travis-ci.org/evanshortiss/fhlog.svg?branch=master)
+[![build-status](https://travis-ci.org/evanshortiss/fhlog.svg?branch=master)
+](https://travis-ci.org/evanshortiss/fhlog.svg?branch=master)[![version](https://badge.fury.io/js/fhlog.svg)
+](https://badge.fury.io/js/fhlog.svg)[![licence](https://img.shields.io/github/license/evanshortiss/fhlog.svg)
+](https://img.shields.io/github/license/evanshortiss/fhlog.svg)
 
 Another loggging library!? Yes. But this one is different. It's written with 
 both the client and server in mind. It has the same API when runnning on the 
