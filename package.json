@@ -1,6 +1,6 @@
 {
   "name": "fhlog",
-  "version": "0.12.2",
+  "version": "0.13.1",
   "description": "Simple and flexible logger for the browser and Node.js",
   "scripts": {
     "format": "FHLOG_FILES=`find ./lib -type f -name '*.js' | xargs` && linelint $FHLOG_FILES && lintspaces -nt -i js-comments -d spaces -s 2 $FHLOG_FILES && jshint $FHLOG_FILES",
