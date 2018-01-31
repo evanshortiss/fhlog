@@ -1,6 +1,6 @@
 {
   "name": "fhlog",
-  "version": "0.12.2",
+  "version": "0.13.1",
   "description": "Simple and flexible logger for the browser and Node.js",
   "scripts": {
     "format": "FHLOG_FILES=`find ./lib -type f -name '*.js' | xargs` && linelint $FHLOG_FILES && lintspaces -nt -i js-comments -d spaces -s 2 $FHLOG_FILES && jshint $FHLOG_FILES",
@@ -12,7 +12,6 @@
   "author": "Evan Shortiss",
   "license": "MIT",
   "devDependencies": {
-    "brfs": "~1.2.0",
     "browserify": "~4.1.8",
     "jshint": "~2.5.2",
     "karma": "^0.12.16",
@@ -21,7 +20,7 @@
     "karma-mocha": "^0.1.4",
     "karma-mocha-reporter": "^0.2.7",
     "linelint": "0.0.3",
-    "lintspaces-cli": "0.0.3",
+    "lintspaces-cli": "~0.6.0",
     "mocha": "~1.20.1"
   },
   "browserify": {
@@ -40,11 +39,11 @@
   },
   "dependencies": {
     "async": "~0.9.0",
-    "brfs": "~1.2.0",
+    "brfs": "~1.4.4",
     "colors": "~1.0.3",
     "html5-fs": "0.0.1",
     "lodash": "~2.4.1",
-    "moment": "2.16.0",
+    "moment": "~2.19.3",
     "safejson": "~1.0.0",
     "xtend": "~4.0.0"
   }
